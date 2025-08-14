@@ -2,7 +2,7 @@
 
 
 
-function Testpage(){
+function ContactUs(){
 
     return (
         <>
@@ -11,4 +11,4 @@ function Testpage(){
     );
 }
 
-export default Testpage
+export default ContactUs
