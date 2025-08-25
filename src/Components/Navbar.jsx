@@ -8,7 +8,7 @@ const Navbar = () => {
     <AppBar position="static" className="navbar">
       <Toolbar>
         <Typography variant="h6" className="navbar-title">
-          My Website
+          SM Design Floors
         </Typography>
 
         <Box>
@@ -17,6 +17,9 @@ const Navbar = () => {
           </Button>
           <Button component={Link} to="/contact-us" className="navbar-link">
             Contact Us
+          </Button>
+          <Button component={Link} to="/gallery" className="navbar-link">
+            Gallery
           </Button>
         </Box>
       </Toolbar>

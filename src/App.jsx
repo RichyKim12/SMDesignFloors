@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
-import ContactUs from './Components/ContactUs'
-import { createBrowserRouter,RouterProvider } from 'react-router-dom'
 import Home from './Components/Home.jsx'
+import ContactUs from './Components/ContactUs'
+import Gallery from './Components/Frontend/Gallery.jsx'
+import { createBrowserRouter,RouterProvider } from 'react-router-dom'
+
 
 const route = createBrowserRouter([
     {
@@ -14,6 +14,10 @@ const route = createBrowserRouter([
     {
       path: '/contact-us',
       element: <ContactUs/>
+    },
+    {
+      path: '/gallery',
+      element: <Gallery/>
     }
     
 ])
