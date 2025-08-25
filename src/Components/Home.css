@@ -1,0 +1,17 @@
+.home-container {
+  margin: 0;  
+  padding: 2rem;
+  background-color: #fdf6e3; /* light tan background */
+  min-height: 100vh; /* full height */
+}
+
+.home-container h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  
+}
+
+.home-container p {
+  font-size: 1.1rem;
+  color: #333;
+}

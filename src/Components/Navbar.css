@@ -1,0 +1,15 @@
+.navbar {
+  background-color: tan !important;
+}
+
+.navbar-title {
+  flex-grow: 1;
+  color: black;
+  font-weight: bold;
+}
+
+.navbar-link {
+  color: black !important;
+  font-weight: bold !important;
+  margin-left: 1rem !important;
+}
