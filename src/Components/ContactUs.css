@@ -1,0 +1,108 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+  }
+  
+  .container {
+    display: flex;
+    min-height: 100vh;
+  }
+  
+  .right {
+    flex: 1;
+    background-color: tan;
+    color: white;
+    padding: 40px;
+  }
+  
+  .right h2 {
+    margin-bottom: 10px;
+  }
+  
+  .right h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+  }
+  
+  .right p,
+  .right li {
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+  
+  .hours {
+    list-style: none;
+    margin-top: 20px;
+  }
+  
+  .left {
+    flex: 1;
+    background-color: #fff;
+    padding: 40px;
+  }
+  
+  .left h2 {
+    margin-bottom: 10px;
+  }
+  
+  .left p {
+    margin-bottom: 15px;
+    font-size: 14px;
+  }
+  
+  .form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+  
+  input,
+  textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  
+  textarea {
+    height: 100px;
+    resize: none;
+    margin-bottom: 15px;
+  }
+  
+  button {
+    background-color: #8a4c47;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  button:hover {
+    background-color: #6e3b37;
+  }
+  
+  .policy {
+    font-size: 12px;
+    margin-bottom: 15px;
+  }
+  
+  .policy a {
+    color: #000;
+    text-decoration: underline;
+  }
+  
+  .visually-hidden {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  
