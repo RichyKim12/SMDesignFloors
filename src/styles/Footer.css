@@ -1,0 +1,34 @@
+.footer {
+  background: var(--dark);
+  padding: 56px 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footer-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  color: var(--cream);
+  font-weight: 300;
+}
+
+.footer-logo span {
+  font-style: italic;
+}
+
+.footer p {
+  color: rgba(255, 255, 255, 0.32);
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 900px) {
+  .footer {
+    padding: 40px 24px;
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+}

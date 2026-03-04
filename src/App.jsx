@@ -1,31 +1,23 @@
-import { useState } from 'react'
-import './App.css'
-import Home from './Components/Home.jsx'
-import ContactUs from './Components/ContactUs'
-import Gallery from './Components/Frontend/Gallery.jsx'
-import { createBrowserRouter,RouterProvider } from 'react-router-dom'
-
-
-const route = createBrowserRouter([
-    {
-        path: '/',
-        element: <Home/>
-    },
-    {
-      path: '/contact-us',
-      element: <ContactUs/>
-    },
-    {
-      path: '/gallery',
-      element: <Gallery/>
-    }
-    
-])
-function App() {
-
+import './styles/global.css';
+import Navbar from './components/Navbar';
+import Hero from './components/Hero';
+import Services from './components/Services';
+import Portfolio from './components/Portfolio';
+import Professionals from './components/Professionals';
+import Contact from './components/Contact';
+import Footer from './components/Footer';
+import Gallery from './components/Frontend/Gallery';
+export default function App() {
   return (
-    <RouterProvider router={route}/>
-  )
+    <>
+      <Navbar />
+      <Hero />
+      <Services />
+      <Portfolio />
+      <Professionals />
+      <Contact />
+      <Gallery />
+      <Footer />
+    </>
+  );
 }
-
-export default App

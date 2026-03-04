@@ -1,30 +1,16 @@
-import React from "react";
-import { AppBar, Toolbar, Button, Typography, Box } from "@mui/material";
-import { Link } from "react-router-dom";
-import "./Navbar.css";
+import '../styles/Navbar.css';
 
-const Navbar = () => {
+export default function Navbar() {
   return (
-    <AppBar position="static" className="navbar">
-      <Toolbar>
-        <Typography variant="h6" className="navbar-title">
-          SM Design Floors
-        </Typography>
-
-        <Box>
-          <Button component={Link} to="/" className="navbar-link">
-            Home
-          </Button>
-          <Button component={Link} to="/contact-us" className="navbar-link">
-            Contact Us
-          </Button>
-          <Button component={Link} to="/gallery" className="navbar-link">
-            Gallery
-          </Button>
-        </Box>
-      </Toolbar>
-    </AppBar>
+    <nav className="nav">
+      <a href="#" className="nav-logo">
+        SM <span>Design</span> Floors
+      </a>
+      <ul className="nav-links">
+        <li><a href="#about">About Us</a></li>
+        <li><a href="#professionals">ProServices</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
   );
-};
-
-export default Navbar;
+}

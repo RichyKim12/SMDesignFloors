@@ -1,0 +1,180 @@
+.services-section {
+  padding: 120px 60px;
+}
+
+/* ── About block ── */
+.about-block {
+  max-width: 820px;
+  margin-bottom: 60px;
+}
+
+.about-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: var(--dark);
+  margin-bottom: 20px;
+}
+
+.about-text {
+  font-size: 0.95rem;
+  line-height: 1.85;
+  color: var(--mid);
+  font-weight: 300;
+  margin-bottom: 18px;
+}
+
+/* ── Services Grid ── */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.service-card {
+  padding: 48px 36px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s;
+  cursor: default;
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.service-card-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.45s ease;
+}
+
+.service-card:hover .service-card-bg {
+  transform: scale(1.05);
+}
+
+.service-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(20, 14, 5, 0.90) 0%,
+    rgba(20, 14, 5, 0.55) 55%,
+    rgba(20, 14, 5, 0.20) 100%
+  );
+}
+
+.service-card-content {
+  position: relative;
+  z-index: 2;
+}
+
+.service-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--tan);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s ease;
+  z-index: 3;
+}
+
+.service-card:hover::after {
+  transform: scaleX(1);
+}
+
+.service-card:hover {
+  transform: translateY(-4px);
+}
+
+.service-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 3.5rem;
+  color: var(--tan-light);
+  opacity: 0.75;
+  line-height: 1;
+  margin-bottom: 14px;
+}
+
+.service-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+  margin-bottom: 12px;
+  color: #f5f0e8;
+}
+
+.service-desc {
+  font-size: 0.87rem;
+  line-height: 1.75;
+  color: rgba(245, 240, 232, 0.85);
+  font-weight: 300;
+}
+
+/* ── Card Backgrounds ── */
+.sc-carpet .service-card-bg {
+  background: repeating-linear-gradient(
+    135deg,
+    #7a6655 0px, #7a6655 4px,
+    #8a7665 4px, #8a7665 8px,
+    #6b5a4e 8px, #6b5a4e 12px,
+    #9a8675 12px, #9a8675 16px
+  );
+}
+
+.sc-bathroom .service-card-bg {
+  background:
+    repeating-linear-gradient(0deg, rgba(180,170,160,0.4) 0px, rgba(180,170,160,0.4) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(180,170,160,0.4) 0px, rgba(180,170,160,0.4) 1px, transparent 1px, transparent 40px),
+    linear-gradient(135deg, #b8afa6 0%, #d4ccc3 40%, #c0b8b0 70%, #ccc4bb 100%);
+}
+
+.sc-kitchen .service-card-bg {
+  background:
+    repeating-linear-gradient(45deg, #7a6a58 0px, #7a6a58 12px, #6a5a48 12px, #6a5a48 14px, #8a7a68 14px, #8a7a68 26px, #5a4a38 26px, #5a4a38 28px),
+    linear-gradient(160deg, #8a7a68, #6a5a48);
+}
+
+.sc-hardwood .service-card-bg {
+  background: repeating-linear-gradient(
+    90deg,
+    #8b7355 0px,  #8b7355 38px,
+    #7a6248 38px, #7a6248 40px,
+    #9c8464 40px, #9c8464 78px,
+    #896050 78px, #896050 80px,
+    #a07860 80px, #a07860 118px,
+    #7a6248 118px,#7a6248 120px
+  );
+}
+
+.sc-plumbing .service-card-bg {
+  background:
+    radial-gradient(circle at 30% 40%, rgba(160,180,190,0.6) 0%, transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(130,155,170,0.5) 0%, transparent 35%),
+    linear-gradient(160deg, #8a9aa5 0%, #6a7f8a 40%, #7a8f9a 70%, #5a7080 100%);
+}
+
+.sc-lvp .service-card-bg {
+  background: repeating-linear-gradient(
+    90deg,
+    #c4b49a 0px,  #c4b49a 60px,
+    #b4a48a 60px, #b4a48a 62px,
+    #d4c4aa 62px, #d4c4aa 122px,
+    #a49478 122px,#a49478 124px
+  );
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .services-section {
+    padding: 72px 24px;
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+}
