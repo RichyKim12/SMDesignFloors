@@ -3,17 +3,15 @@ import Navbar from "./Navbar";
 import Gallery from "./Frontend/Gallery";
 import "./Home.css";
 
-const Home = () => {
+
+export default function HomePage() {
   return (
     <>
-      
-      <div className="home-container">
-        <Navbar />
-        <h1>Welcome to the Home Page</h1>
-        <p>This is the content of your homepage.</p>
-      </div>
+      <Hero />
+      <Services />
+      <Portfolio />
+      <Contact />
     </>
   );
-};
+}
 
-export default Home;
