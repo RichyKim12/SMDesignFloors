@@ -1,0 +1,122 @@
+.portfolio-section {
+  background: var(--dark);
+  padding: 120px 60px;
+}
+
+.portfolio-section .section-title {
+  color: var(--cream);
+}
+
+.portfolio-section .section-label {
+  color: var(--tan-light);
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 48px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Jost', sans-serif;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 12px 28px 14px;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.25s;
+}
+
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--tan);
+  transform: scaleX(0);
+  transition: transform 0.3s;
+}
+
+.tab-btn.active {
+  color: var(--cream);
+}
+
+.tab-btn.active::after {
+  transform: scaleX(1);
+}
+
+.tab-btn:hover {
+  color: var(--tan-light);
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+}
+
+.port-item {
+  aspect-ratio: 4 / 3;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.port-item.wide {
+  grid-column: span 2;
+  aspect-ratio: auto;
+  min-height: 300px;
+}
+
+.port-item.hidden {
+  display: none;
+}
+
+.port-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  display: flex;
+  align-items: flex-end;
+  padding: 24px;
+}
+
+.port-item:hover .port-overlay {
+  opacity: 1;
+}
+
+.port-caption {
+  color: var(--cream);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+}
+
+.port-caption strong {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  margin-bottom: 3px;
+}
+
+@media (max-width: 900px) {
+  .portfolio-section {
+    padding: 72px 24px;
+  }
+
+  .portfolio-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .port-item.wide {
+    grid-column: span 2;
+  }
+}

@@ -1,0 +1,122 @@
+/* ── Section ──────────────────────────────────────────────────── */
+.portfolio-section {
+  background: var(--dark);
+  padding: 120px 60px;
+}
+.portfolio-section .section-title { color: var(--cream); }
+.portfolio-section .section-label { color: var(--tan-light); }
+
+/* ── Tabs ─────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 48px;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Jost', sans-serif;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 12px 28px 14px;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.25s;
+}
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 2px;
+  background: var(--tan);
+  transform: scaleX(0);
+  transition: transform 0.3s;
+}
+.tab-btn.active        { color: var(--cream); }
+.tab-btn.active::after { transform: scaleX(1); }
+.tab-btn:hover         { color: var(--tan-light); }
+
+/* ── Masonry grid ─────────────────────────────────────────────── */
+.my-masonry-grid {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+.my-masonry-grid_column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Masonry item ─────────────────────────────────────────────── */
+.masonry-item {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--mid);
+}
+.masonry-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.masonry-item:hover img { transform: scale(1.04); }
+
+.masonry-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.masonry-item:hover .masonry-overlay { opacity: 1; }
+
+.masonry-zoom {
+  color: white;
+  font-size: 2.5rem;
+  font-weight: 300;
+  line-height: 1;
+  transform: scale(0.7);
+  transition: transform 0.3s;
+}
+.masonry-item:hover .masonry-zoom { transform: scale(1); }
+
+/* ── Load More ────────────────────────────────────────────────── */
+.gallery-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 48px;
+}
+.btn-load-more {
+  background: transparent;
+  border: 1.5px solid var(--tan);
+  color: var(--tan);
+  font-family: 'Jost', sans-serif;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 14px 36px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.25s, color 0.25s;
+}
+.btn-load-more:hover { background: var(--tan); color: var(--cream); }
+.load-more-count {
+  font-size: 0.65rem;
+  opacity: 0.6;
+  letter-spacing: 0.08em;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .portfolio-section { padding: 72px 24px; }
+}
