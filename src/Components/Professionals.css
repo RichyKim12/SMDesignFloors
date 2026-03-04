@@ -1,70 +1,36 @@
-.professionals-section {
+#professionals {
   background: var(--cream-dark);
-  padding: 120px 60px;
   display: grid;
   grid-template-columns: 1fr 1.4fr;
   gap: 100px;
   align-items: start;
+  padding: 120px 60px;
 }
 
-.sticky-info {
-  position: sticky;
-  top: 100px;
-}
+.sticky-info { position: sticky; top: 100px; }
 
-.sticky-info p {
-  color: var(--mid);
-  font-size: 0.9rem;
-  line-height: 1.75;
-  font-weight: 300;
-  max-width: 380px;
-}
-
-.feature-list {
-  margin-top: 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.feature-item {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
+.feature-list { margin-top: 40px; display: flex; flex-direction: column; gap: 20px; }
+.feature-item { display: flex; gap: 16px; align-items: flex-start; }
 .feature-icon {
-  width: 42px;
-  height: 42px;
-  background: var(--tan);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  flex-shrink: 0;
+  width: 42px; height: 42px; background: var(--tan);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
 }
+.feature-item h4 { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; margin-bottom: 3px; }
+.feature-item p  { font-size: 0.82rem; color: var(--mid); line-height: 1.6; font-weight: 300; }
 
-.feature-item h4 {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.1rem;
-  margin-bottom: 3px;
+.upload-zone {
+  border: 1.5px dashed var(--tan); background: var(--cream);
+  padding: 28px 20px; text-align: center; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
 }
-
-.feature-item p {
-  font-size: 0.82rem;
-  color: var(--mid);
-  line-height: 1.6;
-  font-weight: 300;
-}
+.upload-zone:hover { border-color: var(--tan-dark); background: var(--cream-dark); }
+.upload-zone .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+.upload-zone .upload-filename { font-size: 0.87rem; color: var(--tan-dark); font-weight: 400; margin-top: 8px; }
+.upload-zone .upload-hint    { font-size: 0.87rem; color: var(--mid); font-weight: 300; }
+.upload-zone .upload-meta    { font-size: 0.7rem; color: var(--mid); opacity: 0.7; margin-top: 6px; }
 
 @media (max-width: 900px) {
-  .professionals-section {
-    padding: 72px 24px;
-    grid-template-columns: 1fr;
-    gap: 48px;
-  }
-
-  .sticky-info {
-    position: static;
-  }
+  #professionals { grid-template-columns: 1fr; gap: 48px; padding: 72px 24px; }
+  .sticky-info { position: static; }
 }

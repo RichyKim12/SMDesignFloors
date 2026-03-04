@@ -16,7 +16,7 @@ export default function App() {
       <Portfolio />
       <Professionals />
       <Contact />
-      <Gallery />
+      {/* <Gallery /> */}
       <Footer />
     </>
   );

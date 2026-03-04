@@ -1,4 +1,7 @@
-import '../styles/Hero.css';
+import './Hero.css';
+import imgStorefront from '../assets/Hero/image2.png';
+import imgShowroom from '../assets/Hero/image3.jpg';
+import imgWork from '../assets/Hero/image1.JPG';
 
 export default function Hero() {
   return (
@@ -6,34 +9,33 @@ export default function Hero() {
       <div className="hero-text">
         <div className="eyebrow">Premium Remodeling · Since 1997</div>
         <h1 className="hero-title">
-          Floors &amp;<br />
-          <em>Spaces</em><br />
-          Reimagined
+          Floors &amp;<br /><em>Spaces</em><br />Reimagined
         </h1>
         <p className="hero-sub">
           We craft enduring spaces through expert flooring installation, bathroom
-          transformations, and kitchen remodeling—each project a testament to quality
-          craftsmanship.
+          transformations, and kitchen remodeling—each project a testament to quality craftsmanship.
         </p>
         <div className="btn-row">
-          <a href="#contact" className="btn-primary">Get a Free Quote</a>
-          <a href="#portfolio" className="btn-outline">View Our Work</a>
+          <a href="#contact" className="btn-primary" style={{ padding: '22px 80px' }}>
+            Get a Free Quote
+          </a>
         </div>
       </div>
 
       <div className="hero-visual">
         <div className="img-box">
-          <div className="p-marble" />
-          <div className="img-label">Bathroom Remodel</div>
+          <img src={imgWork} alt="Our work" />
+          <div className="img-label">Our Work</div>
         </div>
         <div className="img-box">
-          <div className="p-wood" />
-          <div className="img-label">Hardwood Floors</div>
+          <img src={imgStorefront} alt="SM Floors storefront" />
+          <div className="img-label">Our Store</div>
         </div>
         <div className="img-box">
-          <div className="p-tile" />
-          <div className="img-label">Tile Work</div>
+          <img src={imgShowroom} alt="Our showroom" />
+          <div className="img-label">Our Showroom</div>
         </div>
+        
       </div>
     </div>
   );

@@ -508,7 +508,7 @@ section {
   color: var(--mid);
 }
 
-.form-group input,
+.form-group input:not([type="checkbox"]),
 .form-group select,
 .form-group textarea {
   padding: 10px 12px;

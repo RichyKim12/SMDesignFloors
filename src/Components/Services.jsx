@@ -45,15 +45,17 @@ export default function Services() {
       <div className="section-label">What We Do</div>
       <h2 className="section-title">Crafted for <em>Every</em> Space</h2>
 
-      <div className="about-block">
-        <h3 className="about-heading">Our Company</h3>
-        <p className="about-text">
+      <div style={{ maxWidth: '820px', marginBottom: '60px' }}>
+        <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.8rem', fontWeight: 400, color: 'var(--dark)', marginBottom: '20px' }}>
+          Our Company
+        </h3>
+        <p style={{ fontSize: '0.95rem', lineHeight: 1.85, color: 'var(--mid)', fontWeight: 300, marginBottom: '18px' }}>
           Established in 1997, S.M. Design Floors has built a distinguished reputation for
           delivering superior craftsmanship, dependable service, and refined design solutions.
           With more than 27 years of industry experience, we bring technical expertise,
           precision, and professionalism to every project we undertake.
         </p>
-        <p className="about-text">
+        <p style={{ fontSize: '0.95rem', lineHeight: 1.85, color: 'var(--mid)', fontWeight: 300 }}>
           Our company was founded on the principles of integrity, quality workmanship, and
           personalized service. We understand that your home is one of your most valuable
           investments, and we approach each project with the care and attention it deserves.
