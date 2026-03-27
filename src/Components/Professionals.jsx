@@ -16,22 +16,41 @@ const PROFESSIONS = [
   'Other Trade',
 ];
 
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const TIMES = ['Morning', 'Afternoon'];
+
 export default function Professionals() {
-  const [showSuccess, setShowSuccess]   = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [selectedProfs, setSelectedProfs] = useState([]);
-  const [fileName, setFileName]         = useState('');
+  const [fileName, setFileName] = useState('');
+  const [availability, setAvailability] = useState([]);
+  const [certFile, setCertFile] = useState('');
+  const [insuranceFile, setInsuranceFile] = useState('');
+
   const fileInputRef = useRef(null);
+  const certFileRef = useRef(null);
+  const insuranceFileRef = useRef(null);
 
   const toggleProf = (v) =>
-    setSelectedProfs((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v]);
+    setSelectedProfs((p) => (p.includes(v) ? p.filter((x) => x !== v) : [...p, v]));
+
+  const toggleAvailability = (slot) =>
+    setAvailability((prev) =>
+      prev.includes(slot) ? prev.filter((x) => x !== slot) : [...prev, slot]
+    );
 
   const handleFile = (e) => setFileName(e.target.files[0]?.name || '');
+  const handleCertFile = (e) => setCertFile(e.target.files[0]?.name || '');
+  const handleInsuranceFile = (e) => setInsuranceFile(e.target.files[0]?.name || '');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setShowSuccess(true);
     setSelectedProfs([]);
     setFileName('');
+    setCertFile('');
+    setInsuranceFile('');
+    setAvailability([]);
     e.target.reset();
     setTimeout(() => setShowSuccess(false), 5000);
   };
@@ -74,7 +93,6 @@ export default function Professionals() {
         <div className="form-card">
           <div className="form-title">Join Our Network</div>
           <form onSubmit={handleSubmit}>
-
             <div className="form-row">
               <div className="form-group">
                 <label>Full Name *</label>
@@ -99,12 +117,11 @@ export default function Professionals() {
 
             <div className="form-group">
               <label>
-                Profession *{' '}
-                <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>(select all that apply)</span>
+                Profession * <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>(select all that apply)</span>
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', padding: 16, border: '1.5px solid var(--cream-dark)', background: 'var(--cream)' }}>
+              <div className="profession-grid">
                 {PROFESSIONS.map((prof) => (
-                  <label key={prof} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.87rem', letterSpacing: 0, textTransform: 'none', color: 'var(--text)', cursor: 'pointer', margin: 0 }}>
+                  <label key={prof} className="checkbox-item">
                     <input
                       type="checkbox"
                       name="profession"
@@ -129,10 +146,34 @@ export default function Professionals() {
               </div>
             </div>
 
+            {/* ── Availability Checkboxes ── */}
             <div className="form-group">
               <label>
-                Resume / Portfolio{' '}
-                <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>(PDF, DOC, or DOCX)</span>
+                Availability to be contacted <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>(select all that apply)</span>
+              </label>
+              <div className="availability-grid">
+                {DAYS.map((day) =>
+                  TIMES.map((time) => {
+                    const slot = `${day} ${time}`;
+                    return (
+                      <label key={slot} className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          checked={availability.includes(slot)}
+                          onChange={() => toggleAvailability(slot)}
+                        />
+                        {slot}
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* ── Resume / Portfolio ── */}
+            <div className="form-group">
+              <label>
+                Resume / Portfolio <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>(PDF, DOC, DOCX)</span>
               </label>
               <div className="upload-zone" onClick={() => fileInputRef.current.click()}>
                 <input
@@ -149,6 +190,52 @@ export default function Professionals() {
                   : <div className="upload-hint">Click to upload your resume or drag and drop here</div>
                 }
                 <div className="upload-meta">PDF, DOC, DOCX up to 10MB</div>
+              </div>
+            </div>
+
+            {/* ── Certificates / License ── */}
+            <div className="form-group">
+              <label>
+                Certificates / License (supports .pdf, .jpg, .jpeg)
+              </label>
+              <div className="upload-zone" onClick={() => certFileRef.current.click()}>
+                <input
+                  ref={certFileRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg"
+                  style={{ display: 'none' }}
+                  onChange={handleCertFile}
+                />
+                <div className="upload-icon">{certFile ? '✅' : '📄'}</div>
+                {certFile ? (
+                  <div className="upload-filename">{certFile}</div>
+                ) : (
+                  <div className="upload-hint">Click to upload your certificates/license</div>
+                )}
+                <div className="upload-meta">PDF, JPG, JPEG up to 10MB</div>
+              </div>
+            </div>
+
+            {/* ── Current Insurance ── */}
+            <div className="form-group">
+              <label>
+                Current Insurance (supports .pdf, .jpg, .jpeg)
+              </label>
+              <div className="upload-zone" onClick={() => insuranceFileRef.current.click()}>
+                <input
+                  ref={insuranceFileRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg"
+                  style={{ display: 'none' }}
+                  onChange={handleInsuranceFile}
+                />
+                <div className="upload-icon">{insuranceFile ? '✅' : '📄'}</div>
+                {insuranceFile ? (
+                  <div className="upload-filename">{insuranceFile}</div>
+                ) : (
+                  <div className="upload-hint">Click to upload your insurance proof</div>
+                )}
+                <div className="upload-meta">PDF, JPG, JPEG up to 10MB</div>
               </div>
             </div>
 

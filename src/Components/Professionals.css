@@ -30,6 +30,32 @@
 .upload-zone .upload-hint    { font-size: 0.87rem; color: var(--mid); font-weight: 300; }
 .upload-zone .upload-meta    { font-size: 0.7rem; color: var(--mid); opacity: 0.7; margin-top: 6px; }
 
+.profession-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+  padding: 16px;
+  border: 1.5px solid var(--cream-dark);
+  background: var(--cream);
+}
+
+.availability-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 20px;
+  padding: 16px;
+  border: 1.5px solid var(--cream-dark);
+  background: var(--cream);
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.87rem;
+  cursor: pointer;
+}
+
 @media (max-width: 900px) {
   #professionals { grid-template-columns: 1fr; gap: 48px; padding: 72px 24px; }
   .sticky-info { position: static; }

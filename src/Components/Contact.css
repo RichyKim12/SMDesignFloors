@@ -1,17 +1,154 @@
 #contact {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
-  gap: 80px;
+  gap: clamp(32px, 5vw, 80px);
   align-items: start;
   padding: 120px 60px;
 }
 
-.contact-detail { margin-top: 40px; display: flex; flex-direction: column; gap: 24px; }
-.contact-item   { display: flex; gap: 20px; align-items: flex-start; }
-.contact-icon   { font-size: 1.2rem; color: var(--tan); flex-shrink: 0; padding-top: 2px; }
-.contact-item h4 { font-family: 'Cormorant Garamond', serif; font-size: 1rem; margin-bottom: 2px; }
-.contact-item p  { font-size: 0.87rem; color: var(--mid); font-weight: 300; }
+/* FORM */
+.form-card {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+}
 
+.form-title {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+textarea {
+  min-height: 120px;
+}
+
+/* SERVICES GRID */
+.service-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+  padding: 16px;
+  border: 1px solid #eee;
+  background: #fafafa;
+}
+
+/* AVAILABILITY GRID */
+.availability-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 20px;
+  padding: 16px;
+  border: 1px solid #eee;
+  background: #fdf7f0;
+}
+
+/* CHECKBOX ITEMS */
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.small-note {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+/* BUTTON */
+.form-submit {
+  margin-top: 10px;
+  padding: 12px;
+  background: #8b5e3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* SUCCESS */
+.success-banner {
+  margin-top: 12px;
+  background: #e6f4ea;
+  padding: 10px;
+  border-radius: 6px;
+  display: none;
+}
+
+.success-banner.show {
+  display: block;
+}
+
+/* RIGHT SIDE */
+.section-title {
+  font-size: 2.2rem;
+  margin-bottom: 16px;
+}
+
+.section-desc {
+  font-size: 1rem; /*increased from 0.9 rem*/
+  color: #666;
+  margin-bottom: 24px;
+}
+
+.contact-detail {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.contact-item {
+  display: flex;
+  gap: 14px;
+}
+
+.contact-icon {
+  font-size: 1.2rem;
+}
+
+/* MOBILE */
 @media (max-width: 900px) {
-  #contact { grid-template-columns: 1fr; gap: 48px; padding: 72px 24px; }
+  #contact {
+    grid-template-columns: 1fr;
+    padding: 72px 24px;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .service-grid,
+  .availability-grid {
+    grid-template-columns: 1fr;
+  }
 }

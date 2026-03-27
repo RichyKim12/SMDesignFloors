@@ -6,42 +6,51 @@ const SERVICES_NEEDED = [
   'Tile / Stone Flooring',
   'Laminate / LVP Flooring',
   'Bathroom Remodel',
-  'Shower / Tub Tile',
   'Kitchen Remodel',
-  'Full Project Consultation',
   'Other',
 ];
 
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const TIMES = ['Morning', 'Afternoon'];
+
 const CONTACT_DETAILS = [
-  { icon: '📍', title: 'Address',       body: <>5437 Mapledale Plaza<br />Woodbridge, VA 22193</> },
-  { icon: '📞', title: 'Phone',         body: '(703) 580-1222' },
-  { icon: '🗺️', title: 'Service Area', body: 'Proudly serving Woodbridge and surrounding Northern Virginia communities.' },
-  { icon: '🕐', title: 'Business Hours',body: <>Monday – Saturday: 10:00 AM – 6:00 PM<br />Sunday: Closed</> },
+  { icon: '📞', title: 'Phone', body: '(703) 580-1222' },
+  { icon: '🗺️', title: 'Service Area', body: 'Proudly Serving Northern Virginia, Maryland, and Greater Washington DC Area' },
+  { icon: '🕐', title: 'Business Hours', body: <>Monday – Saturday: 10:00 AM – 6:00 PM<br />Sunday: Closed</> },
 ];
 
 export default function Contact() {
-  const [showSuccess, setShowSuccess]       = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
+  const [availability, setAvailability] = useState([]);
 
   const toggleService = (v) =>
-    setSelectedServices((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v]);
+    setSelectedServices((p) =>
+      p.includes(v) ? p.filter((x) => x !== v) : [...p, v]
+    );
+
+  const toggleAvailability = (slot) =>
+    setAvailability((prev) =>
+      prev.includes(slot) ? prev.filter((x) => x !== slot) : [...prev, slot]
+    );
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setShowSuccess(true);
     setSelectedServices([]);
+    setAvailability([]);
     e.target.reset();
     setTimeout(() => setShowSuccess(false), 5000);
   };
 
   return (
     <section id="contact">
-      {/* ── Left: form ── */}
+      {/* LEFT: FORM */}
       <div>
         <div className="form-card">
           <div className="form-title">Request a Quote</div>
-          <form onSubmit={handleSubmit}>
 
+          <form onSubmit={handleSubmit}>
             <div className="form-row">
               <div className="form-group">
                 <label>Your Name *</label>
@@ -72,6 +81,7 @@ export default function Contact() {
                   <option>$25,000+</option>
                 </select>
               </div>
+
               <div className="form-group">
                 <label>Desired Timeline</label>
                 <select>
@@ -85,18 +95,18 @@ export default function Contact() {
               </div>
             </div>
 
+            {/* SERVICES */}
             <div className="form-group">
               <label>
                 Service Needed *{' '}
-                <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>(select all that apply)</span>
+                <span className="small-note">(select all that apply)</span>
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', padding: 16, border: '1.5px solid var(--cream-dark)', background: 'var(--cream)' }}>
+
+              <div className="service-grid">
                 {SERVICES_NEEDED.map((svc) => (
-                  <label key={svc} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.87rem', letterSpacing: 0, textTransform: 'none', color: 'var(--text)', cursor: 'pointer', margin: 0 }}>
+                  <label key={svc} className="checkbox-item">
                     <input
                       type="checkbox"
-                      name="service"
-                      value={svc}
                       checked={selectedServices.includes(svc)}
                       onChange={() => toggleService(svc)}
                     />
@@ -106,39 +116,78 @@ export default function Contact() {
               </div>
             </div>
 
+            {/* AVAILABILITY CHECKBOXES */}
+            <div className="form-group">
+              <label>
+                Availability to be contacted{' '}
+                <span className="small-note">(select all that apply)</span>
+              </label>
+              <div className="availability-grid">
+                {DAYS.map((day) =>
+                  TIMES.map((time) => {
+                    const slot = `${day} ${time}`;
+                    return (
+                      <label key={slot} className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          checked={availability.includes(slot)}
+                          onChange={() => toggleAvailability(slot)}
+                        />
+                        {slot}
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* DESCRIPTION */}
             <div className="form-group">
               <label>Project Description *</label>
               <textarea
                 required
-                style={{ minHeight: 120 }}
-                placeholder="Tell us about your project – the space, square footage, any specific materials or styles you have in mind..."
+                placeholder="Tell us about your project – the space, square footage, materials, style, etc..."
               />
             </div>
 
-            <button type="submit" className="form-submit">Send My Request</button>
+            {/* FILE UPLOAD */}
+            <div className="form-group">
+              <label>(Upload Floor Plan)</label>
+              <input type="file" accept=".png,.pdf,.jpeg" />
+            </div>
+
+            <button type="submit" className="form-submit">
+              Send My Request
+            </button>
           </form>
 
           <div className={`success-banner ${showSuccess ? 'show' : ''}`}>
-            ✓ Request received! We'll reach out within 24 hours to schedule your free consultation.
+            ✓ Request received! We'll reach out within 24 hours.
           </div>
         </div>
       </div>
 
-      {/* ── Right: info ── */}
+      {/* RIGHT: INFO */}
       <div className="sticky-info">
         <div className="section-label">Reach Us</div>
-        <h2 className="section-title" style={{ fontSize: '2.4rem', marginBottom: 16 }}>
+
+        <h2 className="section-title">
           Let's Start Your <em>Project</em>
         </h2>
-        <p style={{ color: 'var(--mid)', fontSize: '0.9rem', lineHeight: 1.75, fontWeight: 300 }}>
-          Free estimates and consultations for all residential and commercial projects.
-          We serve the greater metro area with a turnaround quote in 24 hours.
+
+        <p className="section-desc">
+          Free estimates and consultations for all residential and commercial
+          projects. We provide quotes within 24 hours.
         </p>
+
         <div className="contact-detail">
           {CONTACT_DETAILS.map((c) => (
             <div key={c.title} className="contact-item">
               <div className="contact-icon">{c.icon}</div>
-              <div><h4>{c.title}</h4><p>{c.body}</p></div>
+              <div>
+                <h4>{c.title}</h4>
+                <p>{c.body}</p>
+              </div>
             </div>
           ))}
         </div>
