@@ -10,13 +10,13 @@ const SERVICES_NEEDED = [
   'Other',
 ];
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TIMES = ['Morning', 'Afternoon'];
 
 const CONTACT_DETAILS = [
-  { icon: '📞', title: 'Phone', body: '(703) 580-1222' },
-  { icon: '🗺️', title: 'Service Area', body: 'Proudly Serving Northern Virginia, Maryland, and Greater Washington DC Area' },
-  { icon: '🕐', title: 'Business Hours', body: <>Monday – Saturday: 10:00 AM – 6:00 PM<br />Sunday: Closed</> },
+  { title: 'Phone', body: '(703) 580-1222' },
+  { title: 'Service Area', body: 'Proudly Serving Northern Virginia, Maryland, and Greater Washington DC Area' },
+  { title: 'Business Hours', body: <>Monday – Saturday: 10:00 AM – 6:00 PM<br />Sunday: Closed</> },
 ];
 
 export default function Contact() {
@@ -29,10 +29,14 @@ export default function Contact() {
       p.includes(v) ? p.filter((x) => x !== v) : [...p, v]
     );
 
-  const toggleAvailability = (slot) =>
+  const toggleSlot = (day, time) => {
+    const slot = `${day} ${time}`;
     setAvailability((prev) =>
       prev.includes(slot) ? prev.filter((x) => x !== slot) : [...prev, slot]
     );
+  };
+
+  const isActive = (day, time) => availability.includes(`${day} ${time}`);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -101,7 +105,6 @@ export default function Contact() {
                 Service Needed *{' '}
                 <span className="small-note">(select all that apply)</span>
               </label>
-
               <div className="service-grid">
                 {SERVICES_NEEDED.map((svc) => (
                   <label key={svc} className="checkbox-item">
@@ -116,28 +119,43 @@ export default function Contact() {
               </div>
             </div>
 
-            {/* AVAILABILITY CHECKBOXES */}
+            {/* AVAILABILITY TOGGLE PILLS */}
             <div className="form-group">
               <label>
                 Availability to be contacted{' '}
                 <span className="small-note">(select all that apply)</span>
               </label>
-              <div className="availability-grid">
-                {DAYS.map((day) =>
-                  TIMES.map((time) => {
-                    const slot = `${day} ${time}`;
-                    return (
-                      <label key={slot} className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          checked={availability.includes(slot)}
-                          onChange={() => toggleAvailability(slot)}
-                        />
-                        {slot}
-                      </label>
-                    );
-                  })
-                )}
+              <div className="availability-table-wrapper">
+                <table className="availability-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      {DAYS.map((day) => (
+                        <th key={day}>{day}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {TIMES.map((time) => (
+                      <tr key={time}>
+                        <td className="time-label">{time}</td>
+                        {DAYS.map((day) => (
+                          <td key={day}>
+                            <button
+                              type="button"
+                              className={`pill-btn${isActive(day, time) ? ' pill-btn--active' : ''}`}
+                              onClick={() => toggleSlot(day, time)}
+                              aria-pressed={isActive(day, time)}
+                              aria-label={`${day} ${time}`}
+                            >
+                              {time === 'Morning' ? 'AM' : 'PM'}
+                            </button>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -152,8 +170,17 @@ export default function Contact() {
 
             {/* FILE UPLOAD */}
             <div className="form-group">
-              <label>(Upload Floor Plan)</label>
-              <input type="file" accept=".png,.pdf,.jpeg" />
+              <label>Floor Plan <span className="small-note">— optional</span></label>
+              <div className="upload-zone" onClick={() => document.getElementById('floorplan-input').click()}>
+                <input
+                  id="floorplan-input"
+                  type="file"
+                  accept=".png,.pdf,.jpeg"
+                  style={{ display: 'none' }}
+                />
+                <div className="upload-hint">Click to upload</div>
+                <div className="upload-meta">PNG, PDF, JPEG · 10MB</div>
+              </div>
             </div>
 
             <button type="submit" className="form-submit">
@@ -183,11 +210,8 @@ export default function Contact() {
         <div className="contact-detail">
           {CONTACT_DETAILS.map((c) => (
             <div key={c.title} className="contact-item">
-              <div className="contact-icon">{c.icon}</div>
-              <div>
-                <h4>{c.title}</h4>
-                <p>{c.body}</p>
-              </div>
+              <h4>{c.title}</h4>
+              <p>{c.body}</p>
             </div>
           ))}
         </div>
