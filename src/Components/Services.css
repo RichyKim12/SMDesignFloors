@@ -1,3 +1,4 @@
+/* ── Section ── */
 .svc-section {
   padding: 120px 60px;
   background: var(--cream);
@@ -24,6 +25,7 @@
   color: #8A7A58;
 }
 
+/* ── About ── */
 .svc-about {
   max-width: 820px;
   margin-bottom: 60px;
@@ -43,6 +45,10 @@
   color: #5C5240;
   font-weight: 300;
   margin-bottom: 18px;
+}
+
+.svc-about-text--last {
+  margin-bottom: 0;
 }
 
 /* ── Grid ── */
@@ -157,5 +163,9 @@
 
   .svc-grid {
     grid-template-columns: 1fr;
+  }
+
+  .svc-card {
+    min-height: 300px;
   }
 }

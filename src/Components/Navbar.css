@@ -73,3 +73,16 @@ nav {
 @media (max-width: 700px) {
   .nav-links { display: none; }
 }
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-logo-img {
+  height: 52px;        /* bigger — was 36px */
+  width: auto;
+  mix-blend-mode: multiply;
+  filter: saturate(2); /* boost saturation */
+}

@@ -1,3 +1,5 @@
+import './Services.css';
+
 const services = [
   {
     num: '01',
@@ -37,132 +39,36 @@ const services = [
   },
 ];
 
-const styles = {
-  section: {
-    padding: '120px 60px',
-  },
-  label: {
-    fontSize: '0.75rem',
-    textTransform: 'uppercase',
-    letterSpacing: '0.18em',
-    color: '#8A7A58',
-    marginBottom: '16px',
-  },
-  title: {
-    fontFamily: "'Cormorant Garamond', serif",
-    fontSize: '3rem',
-    fontWeight: 300,
-    marginBottom: '60px',
-    color: '#2C2519',
-  },
-  aboutBlock: {
-    maxWidth: '820px',
-    marginBottom: '60px',
-  },
-  aboutHeading: {
-    fontFamily: "'Cormorant Garamond', serif",
-    fontSize: '1.8rem',
-    fontWeight: 400,
-    color: '#2C2519',
-    marginBottom: '20px',
-  },
-  aboutText: {
-    fontSize: '0.95rem',
-    lineHeight: 1.85,
-    color: '#5C5240',
-    fontWeight: 300,
-    marginBottom: '18px',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '2px',
-  },
-  card: {
-    position: 'relative',
-    minHeight: '380px',
-    overflow: 'hidden',
-    cursor: 'default',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'flex-end',
-  },
-  img: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    zIndex: 0,
-    display: 'block',
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    background: 'linear-gradient(to top, rgba(10,6,2,0.97) 0%, rgba(10,6,2,0.65) 50%, rgba(10,6,2,0.2) 100%)',
-    zIndex: 1,
-  },
-  content: {
-    position: 'relative',
-    zIndex: 2,
-    padding: '36px',
-  },
-  num: {
-    fontFamily: "'Cormorant Garamond', serif",
-    fontSize: '3rem',
-    color: '#C9BA96',
-    opacity: 0.75,
-    lineHeight: 1,
-    marginBottom: '12px',
-    display: 'block',
-  },
-  cardTitle: {
-    fontFamily: "'Cormorant Garamond', serif",
-    fontSize: '1.6rem',
-    fontWeight: 400,
-    marginBottom: '10px',
-    color: '#f5f0e8',
-  },
-  desc: {
-    fontSize: '0.87rem',
-    lineHeight: 1.75,
-    color: 'rgba(245,240,232,0.82)',
-    fontWeight: 300,
-  },
-};
-
 export default function Services() {
   return (
-    <section id="services" style={styles.section}>
-      <div style={styles.label}>What We Do</div>
-      <h2 style={styles.title}>Crafted for <em style={{ fontStyle: 'italic', color: '#8A7A58' }}>Every</em> Space</h2>
-      <div style={styles.aboutBlock}>
-        <h3 style={styles.aboutHeading}>Our Company</h3>
-        <p style={styles.aboutText}>
+    <section id="services" className="svc-section">
+      <div className="svc-label">What We Do</div>
+      <h2 className="svc-title">Crafted for <em>Every</em> Space</h2>
+
+      <div className="svc-about">
+        <h3 className="svc-about-heading">Our Company</h3>
+        <p className="svc-about-text">
           Established in 1997, S.M. Design Floors has built a distinguished reputation for
           delivering superior craftsmanship, dependable service, and refined design solutions.
           With more than 27 years of industry experience, we bring technical expertise,
           precision, and professionalism to every project we undertake.
         </p>
-        <p style={{ ...styles.aboutText, marginBottom: 0 }}>
+        <p className="svc-about-text svc-about-text--last">
           Our company was founded on the principles of integrity, quality workmanship, and
           personalized service. We understand that your home is one of your most valuable
           investments, and we approach each project with the care and attention it deserves.
         </p>
       </div>
-      <div style={styles.grid}>
+
+      <div className="svc-grid">
         {services.map((s) => (
-          <div key={s.num} style={styles.card}>
-            <img src={s.img} alt={s.title} style={styles.img} />
-            <div style={styles.overlay} />
-            <div style={styles.content}>
-              <span style={styles.num}>{s.num}</span>
-              <h3 style={styles.cardTitle}>{s.title}</h3>
-              <p style={styles.desc}>{s.desc}</p>
+          <div key={s.num} className="svc-card">
+            <img src={s.img} alt={s.title} className="svc-card-img" />
+            <div className="svc-card-overlay" />
+            <div className="svc-card-content">
+              <span className="svc-num">{s.num}</span>
+              <h3 className="svc-card-title">{s.title}</h3>
+              <p className="svc-card-desc">{s.desc}</p>
             </div>
           </div>
         ))}
