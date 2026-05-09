@@ -28,13 +28,29 @@ const services = [
   {
     num: '05',
     title: 'LVP & LVT Flooring',
-    desc: 'Expert installation of luxury vinyl plank and tile flooring — durable, waterproof, and available in a wide variety of styles to complement any interior.',
+    desc: 'Professional interior and exterior painting services — delivering smooth, high-quality finishes with careful surface preparation, clean lines, and durable results that refresh and protect your home.',
     img: 'https://images.unsplash.com/photo-1646592474084-fb3740181648?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?w=800&q=80',
   },
   {
     num: '06',
+    title: 'Painting',
+    desc: 'Expert installation of luxury vinyl plank and tile flooring — durable, waterproof, and available in a wide variety of styles to complement any interior.',
+    img: 'https://images.unsplash.com/photo-1525909002-1b05e0c869d8?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+  },
+  {
+    num: '07',
+    title: 'Electrical',
+    desc: 'Licensed electrical services for residential and commercial projects — safe, code-compliant installations, repairs, and upgrades including lighting, outlets, panel work, and troubleshooting, all delivered with precision and reliability.',
+    img: 'https://plus.unsplash.com/premium_photo-1682086494759-b459f6eff2df?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTd8fEVsZWN0cmljaWFufGVufDB8fDB8fHww',
+  }, {
+    num: '08',
+    title: 'Cabinetry & Vanity',
+    desc: 'Cabinetry and vanity installation — precise, professional installation of pre-built cabinets and vanities, ensuring secure fit, proper alignment, and a clean, polished finish that enhances the functionality and look of your space.',
+    img: 'https://images.unsplash.com/photo-1627362726047-1bda6d2ca237?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  }, {
+    num: '09',
     title: 'Free Quote & Consulting',
-    desc: 'Not sure where to start? We offer complimentary consultations and detailed project quotes. Let our experts walk you through materials, timelines, and costs — no obligation.',
+    desc: 'Not sure where to start? We offer complimentary consultations and detailed project quotes. A skilled handyman is available to assist with repairs, installations, and general home improvement needs — no obligation.',
     img: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?w=800&q=80',
   },
 ];

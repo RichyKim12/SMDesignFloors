@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import './Navbar.css';
-import triangleLogo from '../assets/logo.png';
+import triangleLogo from '../assets/logo/new logo.png';
 
 function ScheduleBanner() {
   const now = new Date();
@@ -30,7 +30,12 @@ export default function Navbar() {
       <nav>
         <Link to="/" className="nav-logo">
           <img src={triangleLogo} alt="SM Design Floors logo" className="nav-logo-img" />
-          SM <span>Design</span> Floors
+          <span className="nav-logo-text">
+            <span style={{ color: '#ff6a00d3' }}>S</span>
+            <span style={{ color: '#3B8C1A' }}>.</span>
+            <span style={{ color: '#f3b20dd7' }}>M</span>
+            <span className="nav-logo-name">Design Floors</span>
+          </span>
         </Link>
         <ul className="nav-links">
           <li><a href="/#services">About Us</a></li>

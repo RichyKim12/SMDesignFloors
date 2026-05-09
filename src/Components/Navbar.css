@@ -6,12 +6,33 @@ nav {
 }
 
 .nav-logo {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.6rem; font-weight: 300; color: var(--cream);
-  letter-spacing: 0.04em; text-decoration: none;
-  display: flex; align-items: center; gap: 12px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.nav-logo span { font-style: italic; color: var(--cream-dark); }
+
+.nav-logo-img {
+  height: 52px;
+  width: auto;
+}
+
+.nav-logo-text {
+  font-family: 'Jost', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.nav-logo-name {
+  color: var(--cream);
+  margin-left: 10px;
+}
 
 .nav-links {
   display: flex;
@@ -20,7 +41,6 @@ nav {
   list-style: none;
 }
 
-/* Standard anchor + React Router <Link> items */
 .nav-links a {
   color: var(--cream); text-decoration: none;
   font-size: 0.76rem; font-weight: 400;
@@ -29,7 +49,6 @@ nav {
 }
 .nav-links a:hover { opacity: 1; }
 
-/* Flooring Visualizer button — stands out from plain links */
 .nav-visualizer-btn {
   background: var(--cream);
   color: var(--tan-dark);
@@ -50,7 +69,6 @@ nav {
   transform: translateY(-1px);
 }
 
-/* Schedule banner */
 .schedule-banner {
   position: fixed; top: 72px; left: 0; right: 0; z-index: 99;
   padding: 10px 60px;
@@ -72,17 +90,4 @@ nav {
 }
 @media (max-width: 700px) {
   .nav-links { display: none; }
-}
-
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.nav-logo-img {
-  height: 52px;        /* bigger — was 36px */
-  width: auto;
-  mix-blend-mode: multiply;
-  filter: saturate(2); /* boost saturation */
 }
