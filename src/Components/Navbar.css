@@ -6,7 +6,6 @@ nav {
 }
 
 .nav-logo {
-<<<<<<< Updated upstream
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -34,7 +33,6 @@ nav {
   color: var(--cream);
   margin-left: 10px;
 }
-=======
   font-family: 'Cormorant Garamond', serif;
   font-size: 1.8rem; font-weight: 500; color: var(--cream);
   letter-spacing: 0.04em; text-decoration: none;
@@ -42,7 +40,6 @@ nav {
 }
 
 .nav-logo span { font-style: italic; color: var(--cream-dark); }
->>>>>>> Stashed changes
 
 .nav-links {
   display: flex;
@@ -60,10 +57,7 @@ nav {
 
 .nav-links a:hover { opacity: 1; }
 
-<<<<<<< Updated upstream
-=======
 /* Flooring Visualizer button */
->>>>>>> Stashed changes
 .nav-visualizer-btn {
   background: var(--cream);
   color: var(--tan-dark);
@@ -85,8 +79,6 @@ nav {
   transform: translateY(-1px);
 }
 
-<<<<<<< Updated upstream
-=======
 /* Login button */
 .nav-login-btn {
   background: transparent;
@@ -110,7 +102,6 @@ nav {
 }
 
 /* Schedule banner */
->>>>>>> Stashed changes
 .schedule-banner {
   position: fixed; top: 72px; left: 0; right: 0; z-index: 99;
   padding: 10px 60px;
