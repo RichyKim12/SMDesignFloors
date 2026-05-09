@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import './Navbar.css';
 import triangleLogo from '../assets/logo/new logo.png';
 
@@ -9,7 +9,7 @@ function ScheduleBanner() {
   const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const dayName = days[day];
   const isSunday = day === 0;
-  const isOpen   = day >= 1 && day <= 6 && timeDecimal >= 10 && timeDecimal < 18;
+  const isOpen = day >= 1 && day <= 6 && timeDecimal >= 10 && timeDecimal < 18;
   let text = '';
   if (isSunday)              text = 'Sunday — Closed Today';
   else if (isOpen)           text = `${dayName} — Open Today · 10:00 AM – 6:00 PM`;
@@ -23,8 +23,7 @@ function ScheduleBanner() {
   );
 }
 
-export default function Navbar() {
-  const navigate = useNavigate();
+export default function Navbar({ onLoginClick }) {
   return (
     <>
       <nav>
@@ -42,11 +41,8 @@ export default function Navbar() {
           <li><Link to="/proservices">ProServices</Link></li>
           <li><a href="/#contact">Contact</a></li>
           <li>
-            <button
-              className="nav-visualizer-btn"
-              onClick={() => navigate('/visualizer')}
-            >
-              Flooring Visualizer
+            <button className="nav-login-btn" onClick={onLoginClick}>
+              Contractor Login
             </button>
           </li>
         </ul>
