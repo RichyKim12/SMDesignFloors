@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Masonry from 'react-masonry-css';
-import '../styles/Portfolio.css';
+import './Portfolio.css';
 
 const breakpointCols = {
   default: 4,
