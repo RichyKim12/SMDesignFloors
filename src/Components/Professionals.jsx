@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import './Professionals.css';
+import { supabase } from '../lib/supabase';
 
 const FEATURES = [
   { title: 'Referral Partnerships', desc: 'Earn referral fees when your clients choose our services.' },
@@ -16,51 +17,205 @@ const PROFESSIONS = [
   'Other Trade',
 ];
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TIMES = ['Morning', 'Afternoon'];
 
 export default function Professionals() {
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [selectedProfs, setSelectedProfs] = useState([]);
-  const [fileName, setFileName] = useState('');
-  const [availability, setAvailability] = useState([]);
-  const [certFile, setCertFile] = useState('');
-  const [insuranceFile, setInsuranceFile] = useState('');
+  const [showVerification, setShowVerification] = useState(false);
+  const [showError, setShowError]               = useState(false);
+  const [errorMsg, setErrorMsg]                 = useState('');
+  const [loading, setLoading]                   = useState(false);
+  const [selectedProfs, setSelectedProfs]       = useState([]);
+  const [availability, setAvailability]         = useState([]);
+  const [resumeFile, setResumeFile]             = useState(null);
+  const [certFile, setCertFile]                 = useState(null);
+  const [insuranceFile, setInsuranceFile]       = useState(null);
+  const [password, setPassword]                 = useState('');
+  const [confirmPassword, setConfirmPassword]   = useState('');
+  const [phone, setPhone]                       = useState('');
 
-  const fileInputRef = useRef(null);
-  const certFileRef = useRef(null);
+  const fileInputRef     = useRef(null);
+  const certFileRef      = useRef(null);
   const insuranceFileRef = useRef(null);
 
+  const formatPhone = (val) => {
+    const digits = val.replace(/\D/g, '').slice(0, 10);
+    if (digits.length < 4) return digits;
+    if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
   const toggleProf = (v) =>
-    setSelectedProfs((p) => (p.includes(v) ? p.filter((x) => x !== v) : [...p, v]));
+    setSelectedProfs((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v]);
 
   const toggleSlot = (day, time) => {
     const slot = `${day} ${time}`;
-    setAvailability((prev) =>
-      prev.includes(slot) ? prev.filter((x) => x !== slot) : [...prev, slot]
-    );
+    setAvailability((prev) => prev.includes(slot) ? prev.filter((x) => x !== slot) : [...prev, slot]);
   };
 
   const isActive = (day, time) => availability.includes(`${day} ${time}`);
 
-  const handleFile = (e) => setFileName(e.target.files[0]?.name || '');
-  const handleCertFile = (e) => setCertFile(e.target.files[0]?.name || '');
-  const handleInsuranceFile = (e) => setInsuranceFile(e.target.files[0]?.name || '');
+  const uploadFile = async (submissionId, file, fileType) => {
+    if (!file) return;
+    const ext  = file.name.split('.').pop();
+    const path = `professional/${submissionId}/${fileType}-${Date.now()}.${ext}`;
 
-  const handleSubmit = (e) => {
+    const { error: uploadError } = await supabase.storage
+      .from('submissions-files')
+      .upload(path, file);
+
+    if (uploadError) {
+      console.error(`Storage upload error (${fileType}):`, uploadError);
+      return;
+    }
+
+    const { error: fileInsertError } = await supabase
+      .from('professional_submission_files')
+      .insert([{
+        submission_id: submissionId,
+        file_name:     file.name,
+        file_path:     path,
+        file_type:     fileType,
+      }]);
+
+    if (fileInsertError) {
+      console.error(`File record insert error (${fileType}):`, fileInsertError);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setShowSuccess(true);
+    setLoading(true);
+    setShowError(false);
+    setErrorMsg('');
+
+    const form  = e.target;
+    const email = form.email.value.trim();
+    const name  = form.name.value.trim();
+
+    // Password validation
+    if (password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters.');
+      setShowError(true);
+      setLoading(false);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMsg('Passwords do not match.');
+      setShowError(true);
+      setLoading(false);
+      return;
+    }
+
+    // Step 1: Create auth account — Supabase prevents duplicate emails natively
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: name } },
+    });
+
+    if (authError) {
+      const msg = authError.message.toLowerCase();
+      if (msg.includes('already registered') || msg.includes('user already exists')) {
+        setErrorMsg('An account with this email already exists. Please sign in instead.');
+      } else {
+        setErrorMsg(`Account creation failed: ${authError.message}`);
+      }
+      setShowError(true);
+      setLoading(false);
+      return;
+    }
+
+    const userId = authData?.user?.id;
+
+    if (!userId) {
+      setErrorMsg('Could not create account. This email may already be registered.');
+      setShowError(true);
+      setLoading(false);
+      return;
+    }
+
+    // Step 2: Insert submission with the real user_id
+    const { data, error } = await supabase
+      .from('professional_submissions')
+      .insert([{
+        user_id:      userId,
+        name,
+        business:     form.business.value.trim() || null,
+        email,
+        phone:        phone || null,
+        professions:  selectedProfs,
+        availability,
+        years_exp:    form.years_exp.value.trim() || null,
+        service_area: form.service_area.value.trim() || null,
+        website:      form.website?.value?.trim() || null,
+        notes:        form.notes?.value?.trim() || null,
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Submission error:', error.message, error.details, error.hint);
+      setErrorMsg(`Something went wrong saving your application: ${error.message}`);
+      setShowError(true);
+      setLoading(false);
+      return;
+    }
+
+    // Step 3: Upload files
+    await Promise.all([
+      uploadFile(data.id, resumeFile,    'resume'),
+      uploadFile(data.id, certFile,      'certificate'),
+      uploadFile(data.id, insuranceFile, 'insurance'),
+    ]);
+
+    // Step 4: Upsert profile with contractor role
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert({ id: userId, role: 'contractor', full_name: name, email });
+
+    if (profileError) {
+      console.error('Profile upsert error:', profileError);
+    }
+
+    setLoading(false);
+    setShowVerification(true);
+
+    // Reset form
     setSelectedProfs([]);
-    setFileName('');
-    setCertFile('');
-    setInsuranceFile('');
     setAvailability([]);
-    e.target.reset();
-    setTimeout(() => setShowSuccess(false), 5000);
+    setResumeFile(null);
+    setCertFile(null);
+    setInsuranceFile(null);
+    setPassword('');
+    setConfirmPassword('');
+    setPhone('');
+    form.reset();
   };
 
   return (
     <section id="professionals">
+
+      {/* ── Success popup modal ── */}
+      {showVerification && (
+        <div className="modal-overlay visible" onClick={() => setShowVerification(false)}>
+          <div className="verification-modal" onClick={e => e.stopPropagation()}>
+            <div className="verification-icon">✓</div>
+            <h3 className="verification-title">Account Created!</h3>
+            <p className="verification-body">
+              Your contractor account has been created and your application has been submitted.
+              Our team will review your profile and be in touch soon.
+            </p>
+            <p className="verification-sub">
+              You can now sign in using the button at the top of the page.
+            </p>
+            <button className="verification-btn" onClick={() => setShowVerification(false)}>
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Left: info ── */}
       <div className="sticky-info">
         <div className="section-label">Trade Network</div>
@@ -96,26 +251,41 @@ export default function Professionals() {
       <div>
         <div className="form-card">
           <div className="form-title">Join Our Network</div>
+
+          {/* Account creation notice */}
+          <div className="account-notice">
+            <p>
+              Completing this form will create a <strong>SM Design Floors contractor account</strong> linked
+              to your email. You'll use it to sign in and manage your profile once approved.
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit}>
             <div className="form-row">
               <div className="form-group">
                 <label>Full Name *</label>
-                <input type="text" placeholder="John Smith" required />
+                <input name="name" type="text" placeholder="John Smith" required />
               </div>
               <div className="form-group">
                 <label>Email Address *</label>
-                <input type="email" placeholder="john@company.com" required />
+                <input name="email" type="email" placeholder="john@company.com" required />
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
                 <label>Company / Business</label>
-                <input type="text" placeholder="Smith Contracting LLC" />
+                <input name="business" type="text" placeholder="Smith Contracting LLC" />
               </div>
               <div className="form-group">
                 <label>Phone Number</label>
-                <input type="tel" placeholder="(555) 000-0000" />
+                <input
+                  name="phone"
+                  type="tel"
+                  placeholder="(555) 000-0000"
+                  value={phone}
+                  onChange={e => setPhone(formatPhone(e.target.value))}
+                />
               </div>
             </div>
 
@@ -142,15 +312,14 @@ export default function Professionals() {
             <div className="form-row">
               <div className="form-group">
                 <label>Specialty / Focus Area</label>
-                <input type="text" placeholder="e.g. Residential Renovation" />
+                <input name="years_exp" type="text" placeholder="e.g. Residential Renovation" />
               </div>
               <div className="form-group">
                 <label>City &amp; State</label>
-                <input type="text" placeholder="e.g. Woodbridge, VA" />
+                <input name="service_area" type="text" placeholder="e.g. Woodbridge, VA" />
               </div>
             </div>
 
-            {/* ── Availability Toggle Pills ── */}
             <div className="form-group">
               <label>
                 Availability to be contacted{' '}
@@ -161,9 +330,7 @@ export default function Professionals() {
                   <thead>
                     <tr>
                       <th></th>
-                      {DAYS.map((day) => (
-                        <th key={day}>{day}</th>
-                      ))}
+                      {DAYS.map((day) => <th key={day}>{day}</th>)}
                     </tr>
                   </thead>
                   <tbody>
@@ -190,7 +357,6 @@ export default function Professionals() {
               </div>
             </div>
 
-            {/* ── Document Uploads ── */}
             <div className="form-group">
               <label>Documents</label>
               <div className="upload-grid">
@@ -201,13 +367,12 @@ export default function Professionals() {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      name="resume"
                       accept=".pdf,.doc,.docx"
                       style={{ display: 'none' }}
-                      onChange={handleFile}
+                      onChange={(e) => setResumeFile(e.target.files[0] || null)}
                     />
-                    {fileName
-                      ? <div className="upload-filename">{fileName}</div>
+                    {resumeFile
+                      ? <div className="upload-filename">{resumeFile.name}</div>
                       : <div className="upload-hint">Click to upload</div>
                     }
                     <div className="upload-meta">PDF, DOC, DOCX · 10MB</div>
@@ -222,10 +387,10 @@ export default function Professionals() {
                       type="file"
                       accept=".pdf,.jpg,.jpeg"
                       style={{ display: 'none' }}
-                      onChange={handleCertFile}
+                      onChange={(e) => setCertFile(e.target.files[0] || null)}
                     />
                     {certFile
-                      ? <div className="upload-filename">{certFile}</div>
+                      ? <div className="upload-filename">{certFile.name}</div>
                       : <div className="upload-hint">Click to upload</div>
                     }
                     <div className="upload-meta">PDF, JPG, JPEG · 10MB</div>
@@ -240,10 +405,10 @@ export default function Professionals() {
                       type="file"
                       accept=".pdf,.jpg,.jpeg"
                       style={{ display: 'none' }}
-                      onChange={handleInsuranceFile}
+                      onChange={(e) => setInsuranceFile(e.target.files[0] || null)}
                     />
                     {insuranceFile
-                      ? <div className="upload-filename">{insuranceFile}</div>
+                      ? <div className="upload-filename">{insuranceFile.name}</div>
                       : <div className="upload-hint">Click to upload</div>
                     }
                     <div className="upload-meta">PDF, JPG, JPEG · 10MB</div>
@@ -253,12 +418,50 @@ export default function Professionals() {
               </div>
             </div>
 
-            <button type="submit" className="form-submit">Submit to Network</button>
-          </form>
+            {/* ── Password section ── */}
+            <div className="password-section">
+              <div className="password-section-label">Create Your Account Password</div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Password *</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                  <span className="field-hint">Minimum 6 characters</span>
+                </div>
+                <div className="form-group">
+                  <label>Confirm Password *</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
 
-          <div className={`success-banner ${showSuccess ? 'show' : ''}`}>
-            ✓ Thank you! We'll be in touch soon about partnership opportunities.
-          </div>
+            {showError && (
+              <div className="form-error-banner">
+                ✗ {errorMsg}
+              </div>
+            )}
+
+            <button type="submit" className="form-submit" disabled={loading}>
+              {loading ? 'Submitting...' : 'Create Account & Submit'}
+            </button>
+
+            <p className="form-legal">
+              By submitting, you agree to create an SM Design Floors contractor account.
+              You can sign in immediately after submitting.
+            </p>
+          </form>
         </div>
       </div>
     </section>

@@ -167,3 +167,27 @@
 @media (max-width: 500px) {
   .modal-card { padding: 36px 24px; }
 }
+
+.modal-signup-prompt {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.modal-signup-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #666;
+  cursor: pointer;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+.modal-title {
+  margin: 4px 0 20px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #666;
+}
