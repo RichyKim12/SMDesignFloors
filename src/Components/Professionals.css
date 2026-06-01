@@ -161,7 +161,17 @@
   line-height: 1.6;
 }
 
+.form-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
 
+.form-legend {
+  padding: 0;
+  margin-bottom: 8px;
+  /* match whatever your existing label styles look like */
+}
 
 .account-notice p {
   margin: 0;
