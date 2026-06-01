@@ -16,5 +16,5 @@ export default function ProtectedRoute() {
   }, [])
 
   if (session === undefined) return <p>Loading...</p>
-  return session ? <Outlet /> : <Navigate to="/login" />
+  return session ? <Outlet /> : <Navigate to="/" />
 }

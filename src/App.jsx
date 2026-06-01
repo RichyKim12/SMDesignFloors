@@ -17,6 +17,7 @@ import RoleRoute from './Components/RoleRoute';
 // Dashboards
 import ContractorDashboard from './pages/ContractorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import NotFound from './pages/NotFound'
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -64,6 +65,9 @@ function Layout() {
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
         </Route>
+
+        {/* Nonexistent pages */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
       {/* Hide footer on dashboard pages */}

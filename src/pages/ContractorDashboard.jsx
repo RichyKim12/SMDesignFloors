@@ -93,7 +93,8 @@ export default function ContractorDashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/';
+    setRole(null);
+    navigate('/');
   };
 
   if (loading) {
