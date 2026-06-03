@@ -62,6 +62,7 @@ export default function AuthModal({ isOpen, onClose }) {
       .eq('id', user.id)
       .single()
 
+    setLoading(false)
     handleClose()
     if (profile.role === 'admin') navigate('/admin')
     else navigate('/contractor')

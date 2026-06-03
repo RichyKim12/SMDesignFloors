@@ -22,7 +22,7 @@ const SERVICES_NEEDED = [
   'Other',
 ];
 
-const DAYS  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TIMES = ['Morning', 'Afternoon'];
 
 const CONTACT_DETAILS = [
@@ -44,17 +44,17 @@ export default function Contact() {
   const fid = (name) => `${uid}-${name}`; // stable unique IDs for ADA
 
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showError, setShowError]     = useState(false);
-  const [errorMsg, setErrorMsg]       = useState('');
-  const [loading, setLoading]         = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const [selectedServices, setSelectedServices] = useState([]);
-  const [availability, setAvailability]         = useState([]);
-  const [floorplanFile, setFloorplanFile]       = useState(null);
-  const [phone, setPhone]                       = useState('');
+  const [availability, setAvailability] = useState([]);
+  const [floorplanFile, setFloorplanFile] = useState(null);
+  const [phone, setPhone] = useState('');
 
   const floorplanRef = useRef(null);
-  const errorRef     = useRef(null);
+  const errorRef = useRef(null);
 
   // ── Helpers ──────────────────────────────────────────────────
 
@@ -106,8 +106,8 @@ export default function Contact() {
   async function uploadFile(submissionId, file, fileType) {
     if (!file) return;
     const safeName = sanitizeFileName(file.name);
-    const ext      = safeName.split('.').pop().replace(/[^a-z0-9]/gi, '').slice(0, 10);
-    const path     = `contact/${submissionId}/${fileType}-${Date.now()}.${ext}`;
+    const ext = safeName.split('.').pop().replace(/[^a-z0-9]/gi, '').slice(0, 10);
+    const path = `contact/${submissionId}/${fileType}-${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from('submissions-files')
@@ -117,9 +117,9 @@ export default function Contact() {
 
     await supabase.from('contact_submission_files').insert([{
       submission_id: submissionId,
-      file_name:     safeName,
-      file_path:     path,
-      file_type:     fileType,
+      file_name: safeName,
+      file_path: path,
+      file_type: fileType,
     }]);
   }
 
@@ -130,42 +130,54 @@ export default function Contact() {
     setShowSuccess(false);
 
     // Rate limit
-    // const rate = checkRateLimit();
-    // if (!rate.allowed) {
-    //   showErr(`Too many attempts. Please wait ${formatRetryTime(rate.retryAfterMs)} before trying again.`);
-    //   return;
-    // }
+    const rate = checkRateLimit();
+    if (!rate.allowed) {
+      showErr(`Too many attempts. Please wait ${formatRetryTime(rate.retryAfterMs)} before trying again.`);
+      return;
+    }
 
     setLoading(true);
     const form = e.target;
 
     // Sanitize all fields
-    const name        = sanitizeText(form.name.value,         { maxLength: 80   });
-    const email       = sanitizeEmail(form.email.value);
-    const cleanPhone  = sanitizePhone(phone);
-    const budget      = sanitizeText(form.budget.value,       { maxLength: 60   });
-    const timeline    = sanitizeText(form.timeline.value,     { maxLength: 60   });
+    const name = sanitizeText(form.name.value, { maxLength: 80 });
+    const email = sanitizeEmail(form.email.value);
+    const cleanPhone = sanitizePhone(phone);
+    const budget = sanitizeText(form.budget.value, { maxLength: 60 });
+    const timeline = sanitizeText(form.timeline.value, { maxLength: 60 });
     const projectDesc = sanitizeNotes(form.project_desc.value, { maxLength: 2000 });
 
     // Basic required field check
     if (!name) { showErr('Please enter your name.'); return; }
     if (!email) { showErr('Please enter a valid email address.'); return; }
     if (!projectDesc) { showErr('Please describe your project.'); return; }
+    console.log('inserting:', {
+      name,
+      email,
+      phone: cleanPhone || null,
+      budget: budget || null,
+      timeline: timeline || null,
+      services: selectedServices,
+      availability,
+      project_desc: projectDesc,
+    });
+    const submissionId = crypto.randomUUID();
 
-    const { data, error } = await supabase
+
+
+    const { error } = await supabase
       .from('contact_submissions')
       .insert([{
+        id: submissionId,
         name,
         email,
-        phone:        cleanPhone   || null,
-        budget:       budget       || null,
-        timeline:     timeline     || null,
-        services:     selectedServices,  // whitelist-validated
-        availability,                    // built from whitelist constants
+        phone: cleanPhone || null,
+        budget: budget || null,
+        timeline: timeline || null,
+        services: selectedServices,
+        availability,
         project_desc: projectDesc,
-      }])
-      .select()
-      .single();
+      }]);
 
     if (error) {
       console.error(error);
@@ -173,7 +185,7 @@ export default function Contact() {
       return;
     }
 
-    await uploadFile(data.id, floorplanFile, 'floorplan');
+    await uploadFile(submissionId, floorplanFile, 'floorplan');
 
     setLoading(false);
     setShowSuccess(true);
@@ -201,7 +213,7 @@ export default function Contact() {
               tabIndex={-1}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               {errorMsg}
             </div>

@@ -66,18 +66,28 @@ export default function ContractorDashboard() {
 
     const [profileRes, submissionRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', uid).single(),
-      supabase.from('professional_submissions').select('*').eq('user_id', uid).single(),
+      supabase.from('professional_submissions').select('*').eq('user_id', uid).maybeSingle(),
     ]);
 
-    if (profileRes.data) setProfile(profileRes.data);
+    const submission = submissionRes.data;
 
+    if (!submission) {
+      setSubmission(null);
+      setDocuments([]);
+      setJobs([]);
+      setLoading(false);
+      return;
+    }
+
+    if (profileRes.data) setProfile(profileRes.data);
+    // console.log('submissionRes', submissionRes)
     if (submissionRes.data) {
       setSubmission(submissionRes.data);
 
       const docsRes = await supabase
         .from('professional_submission_files')
         .select('*')
-        .eq('submission_id', submissionRes.data.id);
+        .eq('submission_id', submissionRes.data.user_id);
 
       if (docsRes.data) setDocuments(docsRes.data);
     }
@@ -94,8 +104,14 @@ export default function ContractorDashboard() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    // setRole(null);
+    console.log('before signout');
+
+    const { error } = await supabase.auth.signOut();
+    console.log('signout error:', error);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log('session after signout:', session);
+
     navigate('/');
   };
 
@@ -163,7 +179,7 @@ export default function ContractorDashboard() {
           </div>
         </div>
 
-        
+
 
         <div className="cd-sidebar-footer">
           {tabs.map((t) => (
