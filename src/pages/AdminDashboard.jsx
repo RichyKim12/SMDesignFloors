@@ -1,38 +1,38 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import './AdminDashboard.css';
 
-// ── icons (same helper as ContractorDashboard) ─────────────
 const Icon = ({ d, size = 18 }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
   </svg>
 );
 
 const Icons = {
-  jobs:     'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2',
+  jobs: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2',
   contractors: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
-  logout:   'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+  logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+  search: 'M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z',
+  x: 'M18 6L6 18M6 6l12 12',
+  sort: 'M3 6h18M7 12h10M11 18h2',
 };
 
 const STATUS_OPTIONS = ['new', 'in_progress', 'completed'];
-const STATUS_LABELS  = { new: 'New', in_progress: 'In Progress', completed: 'Completed' };
-const STATUS_COLORS  = { new: '#c8953a', in_progress: '#4a7fb5', completed: '#2d8a5e' };
+const STATUS_LABELS = { new: 'New', in_progress: 'In Progress', completed: 'Completed' };
+const STATUS_COLORS = { new: '#c8953a', in_progress: '#4a7fb5', completed: '#2d8a5e' };
+
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
+  { value: 'name_az', label: 'Name A–Z' },
+  { value: 'name_za', label: 'Name Z–A' },
+];
 
 export default function AdminDashboard() {
-  const location     = useLocation();
-  const navigate     = useNavigate();
-  const [view, setView] = useState('jobs'); // 'jobs' | 'contractors'
+  const navigate = useNavigate();
+  const [view, setView] = useState('jobs');
 
   // Jobs state
   const [jobs, setJobs] = useState([]);
@@ -45,9 +45,13 @@ export default function AdminDashboard() {
   const [contractors, setContractors] = useState([]);
   const [contractorsLoading, setContractorsLoading] = useState(true);
   const [selectedContractor, setSelectedContractor] = useState(null);
-
-  // Approved contractors for assignment dropdown
   const [approvedContractors, setApprovedContractors] = useState([]);
+
+  // Contractor search & filter state
+  const [contractorSearch, setContractorSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'approved' | 'pending'
+  const [filterProfession, setFilterProfession] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => { fetchJobs(); fetchContractors(); }, []);
 
@@ -72,20 +76,88 @@ export default function AdminDashboard() {
     setContractorsLoading(false);
   };
 
+  // ── Derived: all unique professions across contractors ──
+  const allProfessions = useMemo(() => {
+    const set = new Set();
+    contractors.forEach(c => {
+      const profs = Array.isArray(c.professions) ? c.professions : c.professions ? [c.professions] : [];
+      profs.forEach(p => set.add(p));
+    });
+    return Array.from(set).sort();
+  }, [contractors]);
+
+  // ── Filtered + sorted contractor list ──
+  const filteredContractors = useMemo(() => {
+    let list = [...contractors];
+
+    // Status filter
+    if (filterStatus === 'approved') list = list.filter(c => c.approved);
+    else if (filterStatus === 'pending') list = list.filter(c => !c.approved);
+
+    // Profession filter
+    if (filterProfession !== 'all') {
+      list = list.filter(c => {
+        const profs = Array.isArray(c.professions) ? c.professions : c.professions ? [c.professions] : [];
+        return profs.includes(filterProfession);
+      });
+    }
+
+    // Search: name, business, email
+    const q = contractorSearch.trim().toLowerCase();
+    if (q) {
+      list = list.filter(c =>
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.business || '').toLowerCase().includes(q) ||
+        (c.email || '').toLowerCase().includes(q) ||
+        (c.service_area || '').toLowerCase().includes(q)
+      );
+    }
+
+    // Sort
+    list.sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.created_at) - new Date(a.created_at);
+      if (sortBy === 'oldest') return new Date(a.created_at) - new Date(b.created_at);
+      if (sortBy === 'name_az') return (a.name || '').localeCompare(b.name || '');
+      if (sortBy === 'name_za') return (b.name || '').localeCompare(a.name || '');
+      return 0;
+    });
+
+    return list;
+  }, [contractors, filterStatus, filterProfession, contractorSearch, sortBy]);
+
+  const clearContractorFilters = () => {
+    setContractorSearch('');
+    setFilterStatus('all');
+    setFilterProfession('all');
+    setSortBy('newest');
+  };
+
+  const hasActiveFilters = contractorSearch || filterStatus !== 'all' || filterProfession !== 'all' || sortBy !== 'newest';
+
+  // ── Contractor actions ──
   const approveContractor = async (id) => {
-    await supabase.from('professional_submissions').update({ approved: true }).eq('id', id);
+    const { error } = await supabase
+      .from('professional_submissions')
+      .update({ approved: true })
+      .eq('user_id', id);
+    if (error) { console.error('Approve failed:', error.message); return; }
     fetchContractors();
-    if (selectedContractor?.id === id)
+    if (selectedContractor?.user_id === id)
       setSelectedContractor(prev => ({ ...prev, approved: true }));
   };
 
   const revokeContractor = async (id) => {
-    await supabase.from('professional_submissions').update({ approved: false }).eq('id', id);
+    const { error } = await supabase
+      .from('professional_submissions')
+      .update({ approved: false })
+      .eq('user_id', id);
+    if (error) { console.error('Revoke failed:', error.message); return; }
     fetchContractors();
-    if (selectedContractor?.id === id)
+    if (selectedContractor?.user_id === id)
       setSelectedContractor(prev => ({ ...prev, approved: false }));
   };
 
+  // ── Job actions ──
   const updateJobStatus = async (id, status) => {
     await supabase.from('contact_submissions').update({ status }).eq('id', id);
     setJobs(prev => prev.map(j => j.id === id ? { ...j, status } : j));
@@ -93,23 +165,17 @@ export default function AdminDashboard() {
   };
 
   const saveJobNote = async () => {
-    await supabase
-      .from('contact_submissions')
-      .update({ admin_notes: jobNote })
-      .eq('id', selectedJob.id);
+    await supabase.from('contact_submissions').update({ admin_notes: jobNote }).eq('id', selectedJob.id);
     setJobs(prev => prev.map(j => j.id === selectedJob.id ? { ...j, admin_notes: jobNote } : j));
     setSelectedJob(prev => ({ ...prev, admin_notes: jobNote }));
   };
 
   const assignJob = async () => {
-    const contractor = approvedContractors.find(c => c.id === assignContractorId);
-    await supabase
-      .from('contact_submissions')
-      .update({
-        assigned_contractor_id: assignContractorId,
-        assigned_contractor_name: contractor?.name || '',
-      })
-      .eq('id', selectedJob.id);
+    const contractor = approvedContractors.find(c => c.user_id === assignContractorId);
+    await supabase.from('contact_submissions').update({
+      assigned_contractor_id: assignContractorId,
+      assigned_contractor_name: contractor?.name || '',
+    }).eq('id', selectedJob.id);
     setJobs(prev => prev.map(j =>
       j.id === selectedJob.id
         ? { ...j, assigned_contractor_id: assignContractorId, assigned_contractor_name: contractor?.name }
@@ -138,9 +204,7 @@ export default function AdminDashboard() {
   const openContractor = (c) => setSelectedContractor(c);
 
   const handleSignOut = async () => {
-    console.log('hello')
     await supabase.auth.signOut();
-    // setRole(null);
     navigate('/');
   };
 
@@ -148,16 +212,16 @@ export default function AdminDashboard() {
     d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
   const jobStats = {
-    total:      jobs.length,
-    new:        jobs.filter(j => !j.status || j.status === 'new').length,
+    total: jobs.length,
+    new: jobs.filter(j => !j.status || j.status === 'new').length,
     inProgress: jobs.filter(j => j.status === 'in_progress').length,
-    completed:  jobs.filter(j => j.status === 'completed').length,
+    completed: jobs.filter(j => j.status === 'completed').length,
   };
 
   const contractorStats = {
-    total:    contractors.length,
+    total: contractors.length,
     approved: contractors.filter(c => c.approved).length,
-    pending:  contractors.filter(c => !c.approved).length,
+    pending: contractors.filter(c => !c.approved).length,
   };
 
   return (
@@ -165,54 +229,41 @@ export default function AdminDashboard() {
 
       {/* ── Sidebar ── */}
       <aside className="admin-sidebar">
-
-        {/* Brand — mirrors cd-sidebar-top */}
         <div className="admin-brand">
           <div className="admin-brand-sm">SM</div>
           <div className="admin-brand-text">Design Floors</div>
           <div className="admin-brand-tag">Admin</div>
         </div>
 
-        {/* Nav — mirrors cd-sidebar-footer nav buttons */}
-        <nav className="admin-nav">
-          <button
-            className={`admin-nav-item ${view === 'jobs' ? 'active' : ''}`}
-            onClick={() => setView('jobs')}
-          >
-            <Icon d={Icons.jobs} size={16} />
-            <span>Jobs</span>
-            {jobStats.new > 0 && <span className="nav-badge">{jobStats.new}</span>}
-          </button>
-
-          <button
-            className={`admin-nav-item ${view === 'contractors' ? 'active' : ''}`}
-            onClick={() => setView('contractors')}
-          >
-            <Icon d={Icons.contractors} size={16} />
-            <span>Contractors</span>
-            {contractorStats.pending > 0 && <span className="nav-badge">{contractorStats.pending}</span>}
-          </button>
-        </nav>
-
-        {/* Footer — stats + sign out */}
-        <div className="admin-sidebar-footer">
-          <div className="sidebar-stats-row">
-            <div className="sidebar-stat">
-              <span className="sidebar-stat-val">{jobStats.total}</span>
-              <span className="sidebar-stat-label">Jobs</span>
-            </div>
-            <div className="sidebar-stat">
-              <span className="sidebar-stat-val">{contractorStats.approved}</span>
-              <span className="sidebar-stat-label">Contractors</span>
-            </div>
+        <div className="sidebar-stats-row">
+          <div className="sidebar-stat">
+            <span className="sidebar-stat-val">{jobStats.total}</span>
+            <span className="sidebar-stat-label">Jobs</span>
           </div>
+          <div className="sidebar-stat">
+            <span className="sidebar-stat-val">{contractorStats.approved}</span>
+            <span className="sidebar-stat-label">Contractors</span>
+          </div>
+        </div>
 
+        <button className={`admin-nav-item ${view === 'jobs' ? 'active' : ''}`} onClick={() => setView('jobs')}>
+          <Icon d={Icons.jobs} size={16} />
+          <span>Jobs</span>
+          {jobStats.new > 0 && <span className="nav-badge">{jobStats.new}</span>}
+        </button>
+
+        <button className={`admin-nav-item ${view === 'contractors' ? 'active' : ''}`} onClick={() => setView('contractors')}>
+          <Icon d={Icons.contractors} size={16} />
+          <span>Contractors</span>
+          {contractorStats.pending > 0 && <span className="nav-badge">{contractorStats.pending}</span>}
+        </button>
+
+        <div className="admin-sidebar-footer">
           <button className="btn-sign-out" onClick={handleSignOut}>
             <Icon d={Icons.logout} size={15} />
             <span>Sign Out</span>
           </button>
         </div>
-
       </aside>
 
       {/* ── Main ── */}
@@ -227,20 +278,13 @@ export default function AdminDashboard() {
                 <p className="admin-view-sub">Client contact submissions &amp; assignments</p>
               </div>
               <div className="stat-chips">
-                <div className="stat-chip" style={{ '--chip-color': '#c8953a' }}>
-                  <span>{jobStats.new}</span> New
-                </div>
-                <div className="stat-chip" style={{ '--chip-color': '#4a7fb5' }}>
-                  <span>{jobStats.inProgress}</span> In Progress
-                </div>
-                <div className="stat-chip" style={{ '--chip-color': '#2d8a5e' }}>
-                  <span>{jobStats.completed}</span> Completed
-                </div>
+                <div className="stat-chip" style={{ '--chip-color': '#c8953a' }}><span>{jobStats.new}</span> New</div>
+                <div className="stat-chip" style={{ '--chip-color': '#4a7fb5' }}><span>{jobStats.inProgress}</span> In Progress</div>
+                <div className="stat-chip" style={{ '--chip-color': '#2d8a5e' }}><span>{jobStats.completed}</span> Completed</div>
               </div>
             </div>
 
             <div className="admin-split">
-              {/* Job list */}
               <div className="admin-list">
                 {jobsLoading
                   ? <div className="admin-loading">Loading jobs…</div>
@@ -254,10 +298,7 @@ export default function AdminDashboard() {
                       >
                         <div className="list-item-top">
                           <span className="list-item-name">{job.name}</span>
-                          <span
-                            className="list-item-status"
-                            style={{ color: STATUS_COLORS[job.status || 'new'] }}
-                          >
+                          <span className="list-item-status" style={{ color: STATUS_COLORS[job.status || 'new'] }}>
                             {STATUS_LABELS[job.status || 'new']}
                           </span>
                         </div>
@@ -266,16 +307,13 @@ export default function AdminDashboard() {
                           <span>{formatDate(job.created_at)}</span>
                         </div>
                         {job.assigned_contractor_name && (
-                          <div className="list-item-assigned">
-                            Assigned: {job.assigned_contractor_name}
-                          </div>
+                          <div className="list-item-assigned">Assigned: {job.assigned_contractor_name}</div>
                         )}
                       </div>
                     ))
                 }
               </div>
 
-              {/* Job detail */}
               <div className="admin-detail">
                 {!selectedJob
                   ? <div className="admin-detail-empty">Select a job to view details</div>
@@ -286,12 +324,9 @@ export default function AdminDashboard() {
                           <h2 className="detail-title">{selectedJob.name}</h2>
                           <p className="detail-sub">{selectedJob.email} · {selectedJob.phone}</p>
                         </div>
-                        <button className="btn-delete" onClick={() => deleteJob(selectedJob.id)}>
-                          Delete
-                        </button>
+                        <button className="btn-delete" onClick={() => deleteJob(selectedJob.id)}>Delete</button>
                       </div>
 
-                      {/* Status */}
                       <div className="detail-section">
                         <div className="detail-section-label">Status</div>
                         <div className="status-pills">
@@ -308,66 +343,29 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {/* Job info */}
                       <div className="detail-section">
                         <div className="detail-section-label">Job Details</div>
                         <div className="detail-grid">
-                          {selectedJob.services && (
-                            <>
-                              <span className="dg-label">Services</span>
-                              <span>{Array.isArray(selectedJob.services) ? selectedJob.services.join(', ') : selectedJob.services}</span>
-                            </>
-                          )}
-                          {selectedJob.budget && (
-                            <>
-                              <span className="dg-label">Budget</span>
-                              <span>{selectedJob.budget}</span>
-                            </>
-                          )}
-                          {selectedJob.timeline && (
-                            <>
-                              <span className="dg-label">Timeline</span>
-                              <span>{selectedJob.timeline}</span>
-                            </>
-                          )}
-                          {selectedJob.project_desc && (
-                            <>
-                              <span className="dg-label">Description</span>
-                              <span>{selectedJob.project_desc}</span>
-                            </>
-                          )}
-                          {selectedJob.availability && (
-                            <>
-                              <span className="dg-label">Availability</span>
-                              <span>
-                                {Array.isArray(selectedJob.availability)
-                                  ? selectedJob.availability.join(', ')
-                                  : selectedJob.availability}
-                              </span>
-                            </>
-                          )}
+                          {selectedJob.services && (<><span className="dg-label">Services</span><span>{Array.isArray(selectedJob.services) ? selectedJob.services.join(', ') : selectedJob.services}</span></>)}
+                          {selectedJob.budget && (<><span className="dg-label">Budget</span><span>{selectedJob.budget}</span></>)}
+                          {selectedJob.timeline && (<><span className="dg-label">Timeline</span><span>{selectedJob.timeline}</span></>)}
+                          {selectedJob.project_desc && (<><span className="dg-label">Description</span><span>{selectedJob.project_desc}</span></>)}
+                          {selectedJob.availability && (<><span className="dg-label">Availability</span><span>{Array.isArray(selectedJob.availability) ? selectedJob.availability.join(', ') : selectedJob.availability}</span></>)}
                           <span className="dg-label">Submitted</span>
                           <span>{formatDate(selectedJob.created_at)}</span>
                         </div>
                       </div>
 
-                      {/* Assign contractor */}
                       <div className="detail-section">
                         <div className="detail-section-label">Assign Contractor</div>
                         {approvedContractors.length === 0
                           ? <p className="detail-hint">No approved contractors yet.</p>
                           : (
                             <div className="assign-row">
-                              <select
-                                className="admin-select"
-                                value={assignContractorId}
-                                onChange={e => setAssignContractorId(e.target.value)}
-                              >
+                              <select className="admin-select" value={assignContractorId} onChange={e => setAssignContractorId(e.target.value)}>
                                 <option value="">— Unassigned —</option>
                                 {approvedContractors.map(c => (
-                                  <option key={c.id} value={c.id}>
-                                    {c.name} · {c.business || c.email}
-                                  </option>
+                                  <option key={c.user_id} value={c.user_id}>{c.name} · {c.business || c.email}</option>
                                 ))}
                               </select>
                               <button className="btn-primary" onClick={assignJob}>Save</button>
@@ -381,7 +379,6 @@ export default function AdminDashboard() {
                         )}
                       </div>
 
-                      {/* Admin notes */}
                       <div className="detail-section">
                         <div className="detail-section-label">Admin Notes</div>
                         <textarea
@@ -391,9 +388,7 @@ export default function AdminDashboard() {
                           placeholder="Add internal notes about this job…"
                           rows={4}
                         />
-                        <button className="btn-primary" style={{ marginTop: 8 }} onClick={saveJobNote}>
-                          Save Notes
-                        </button>
+                        <button className="btn-primary" style={{ marginTop: 8 }} onClick={saveJobNote}>Save Notes</button>
                       </div>
                     </div>
                   )
@@ -412,13 +407,84 @@ export default function AdminDashboard() {
                 <p className="admin-view-sub">ProServices applications &amp; approvals</p>
               </div>
               <div className="stat-chips">
-                <div className="stat-chip" style={{ '--chip-color': '#c8953a' }}>
-                  <span>{contractorStats.pending}</span> Pending
-                </div>
-                <div className="stat-chip" style={{ '--chip-color': '#2d8a5e' }}>
-                  <span>{contractorStats.approved}</span> Approved
-                </div>
+                <div className="stat-chip" style={{ '--chip-color': '#c8953a' }}><span>{contractorStats.pending}</span> Pending</div>
+                <div className="stat-chip" style={{ '--chip-color': '#2d8a5e' }}><span>{contractorStats.approved}</span> Approved</div>
               </div>
+            </div>
+
+            {/* ── Search & Filter Bar ── */}
+            <div className="contractor-toolbar">
+              <div className="contractor-search-wrap">
+                <Icon d={Icons.search} size={15} />
+                <input
+                  className="contractor-search"
+                  type="text"
+                  placeholder="Search by name, business, email, area…"
+                  value={contractorSearch}
+                  onChange={e => setContractorSearch(e.target.value)}
+                />
+                {contractorSearch && (
+                  <button className="search-clear" onClick={() => setContractorSearch('')}>
+                    <Icon d={Icons.x} size={13} />
+                  </button>
+                )}
+              </div>
+
+              <div className="contractor-filters">
+                {/* Status filter pills */}
+                <div className="filter-pill-group">
+                  {['all', 'approved', 'pending'].map(s => (
+                    <button
+                      key={s}
+                      className={`filter-pill ${filterStatus === s ? 'active' : ''}`}
+                      onClick={() => setFilterStatus(s)}
+                    >
+                      {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Profession filter */}
+                {allProfessions.length > 0 && (
+                  <select
+                    className="admin-select admin-select--sm"
+                    value={filterProfession}
+                    onChange={e => setFilterProfession(e.target.value)}
+                  >
+                    <option value="all">All Trades</option>
+                    {allProfessions.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                )}
+
+                {/* Sort */}
+                <div className="sort-wrap">
+                  <Icon d={Icons.sort} size={14} />
+                  <select
+                    className="admin-select admin-select--sm"
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value)}
+                  >
+                    {SORT_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Clear filters */}
+                {hasActiveFilters && (
+                  <button className="btn-clear-filters" onClick={clearContractorFilters}>
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Results count */}
+            <div className="contractor-results-meta">
+              {filteredContractors.length} of {contractors.length} contractor{contractors.length !== 1 ? 's' : ''}
+              {hasActiveFilters && ' (filtered)'}
             </div>
 
             <div className="admin-split">
@@ -426,20 +492,24 @@ export default function AdminDashboard() {
               <div className="admin-list">
                 {contractorsLoading
                   ? <div className="admin-loading">Loading contractors…</div>
-                  : contractors.length === 0
-                    ? <div className="admin-empty">No applications yet.</div>
-                    : contractors.map(c => (
+                  : filteredContractors.length === 0
+                    ? (
+                      <div className="admin-empty">
+                        {hasActiveFilters ? 'No contractors match your filters.' : 'No applications yet.'}
+                        {hasActiveFilters && (
+                          <button className="btn-text" onClick={clearContractorFilters}>Clear filters</button>
+                        )}
+                      </div>
+                    )
+                    : filteredContractors.map(c => (
                       <div
-                        key={c.id}
-                        className={`admin-list-item ${selectedContractor?.id === c.id ? 'selected' : ''}`}
+                        key={c.user_id}
+                        className={`admin-list-item ${selectedContractor?.user_id === c.user_id ? 'selected' : ''}`}
                         onClick={() => openContractor(c)}
                       >
                         <div className="list-item-top">
                           <span className="list-item-name">{c.name}</span>
-                          <span
-                            className="list-item-status"
-                            style={{ color: c.approved ? '#3a9c6b' : '#c8953a' }}
-                          >
+                          <span className="list-item-status" style={{ color: c.approved ? '#3a9c6b' : '#c8953a' }}>
                             {c.approved ? 'Approved' : 'Pending'}
                           </span>
                         </div>
@@ -451,10 +521,13 @@ export default function AdminDashboard() {
                           <div className="list-item-tags">
                             {(Array.isArray(c.professions) ? c.professions : [c.professions])
                               .slice(0, 2)
-                              .map(p => (
-                                <span key={p} className="list-tag">{p}</span>
-                              ))
+                              .map(p => <span key={p} className="list-tag">{p}</span>)
                             }
+                            {(Array.isArray(c.professions) ? c.professions : [c.professions]).length > 2 && (
+                              <span className="list-tag list-tag--more">
+                                +{(Array.isArray(c.professions) ? c.professions : [c.professions]).length - 2}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -471,103 +544,75 @@ export default function AdminDashboard() {
                       <div className="detail-header">
                         <div>
                           <h2 className="detail-title">{selectedContractor.name}</h2>
-                          <p className="detail-sub">
-                            {selectedContractor.business || '—'} · {selectedContractor.email}
-                          </p>
+                          <p className="detail-sub">{selectedContractor.business || '—'} · {selectedContractor.email}</p>
                         </div>
                         <span
                           className="detail-badge"
                           style={{
                             background: selectedContractor.approved ? 'rgba(58,156,107,0.12)' : 'rgba(200,149,58,0.12)',
-                            color:      selectedContractor.approved ? '#3a9c6b' : '#c8953a',
-                            border:     `1px solid ${selectedContractor.approved ? '#3a9c6b' : '#c8953a'}`,
+                            color: selectedContractor.approved ? '#3a9c6b' : '#c8953a',
+                            border: `1px solid ${selectedContractor.approved ? '#3a9c6b' : '#c8953a'}`,
                           }}
                         >
                           {selectedContractor.approved ? 'Approved' : 'Pending'}
                         </span>
                       </div>
 
-                      {/* Approve / Revoke */}
                       <div className="detail-section">
                         <div className="detail-section-label">Approval</div>
                         <div className="assign-row">
                           {!selectedContractor.approved
-                            ? <button className="btn-approve" onClick={() => approveContractor(selectedContractor.id)}>
-                                Approve Contractor
-                              </button>
-                            : <button className="btn-revoke" onClick={() => revokeContractor(selectedContractor.id)}>
-                                Revoke Approval
-                              </button>
+                            ? <button className="btn-approve" onClick={() => approveContractor(selectedContractor.user_id)}>Approve Contractor</button>
+                            : <button className="btn-revoke" onClick={() => revokeContractor(selectedContractor.user_id)}>Revoke Approval</button>
                           }
                         </div>
                       </div>
 
-                      {/* Contractor info */}
                       <div className="detail-section">
                         <div className="detail-section-label">Profile</div>
                         <div className="detail-grid">
-                          <span className="dg-label">Phone</span>
-                          <span>{selectedContractor.phone || '—'}</span>
-                          <span className="dg-label">Service Area</span>
-                          <span>{selectedContractor.service_area || '—'}</span>
-                          <span className="dg-label">Specialty</span>
-                          <span>{selectedContractor.years_exp || '—'}</span>
-                          <span className="dg-label">Website</span>
-                          <span>{selectedContractor.website || '—'}</span>
-                          <span className="dg-label">Applied</span>
-                          <span>{formatDate(selectedContractor.created_at)}</span>
+                          <span className="dg-label">Phone</span><span>{selectedContractor.phone || '—'}</span>
+                          <span className="dg-label">Service Area</span><span>{selectedContractor.service_area || '—'}</span>
+                          <span className="dg-label">Specialty</span><span>{selectedContractor.years_exp || '—'}</span>
+                          <span className="dg-label">Website</span><span>{selectedContractor.website || '—'}</span>
+                          <span className="dg-label">Applied</span><span>{formatDate(selectedContractor.created_at)}</span>
                         </div>
                       </div>
 
-                      {/* Professions */}
                       {selectedContractor.professions?.length > 0 && (
                         <div className="detail-section">
                           <div className="detail-section-label">Professions</div>
                           <div className="list-item-tags" style={{ marginTop: 8 }}>
-                            {(Array.isArray(selectedContractor.professions)
-                              ? selectedContractor.professions
-                              : [selectedContractor.professions]
-                            ).map(p => (
-                              <span key={p} className="list-tag">{p}</span>
-                            ))}
+                            {(Array.isArray(selectedContractor.professions) ? selectedContractor.professions : [selectedContractor.professions])
+                              .map(p => <span key={p} className="list-tag">{p}</span>)}
                           </div>
                         </div>
                       )}
 
-                      {/* Availability */}
                       {selectedContractor.availability?.length > 0 && (
                         <div className="detail-section">
                           <div className="detail-section-label">Availability</div>
                           <div className="list-item-tags" style={{ marginTop: 8 }}>
-                            {(Array.isArray(selectedContractor.availability)
-                              ? selectedContractor.availability
-                              : [selectedContractor.availability]
-                            ).map(a => (
-                              <span key={a} className="list-tag">{a}</span>
-                            ))}
+                            {(Array.isArray(selectedContractor.availability) ? selectedContractor.availability : [selectedContractor.availability])
+                              .map(a => <span key={a} className="list-tag">{a}</span>)}
                           </div>
                         </div>
                       )}
 
-                      {/* Assigned jobs */}
                       <div className="detail-section">
                         <div className="detail-section-label">Assigned Jobs</div>
-                        {jobs.filter(j => j.assigned_contractor_id === selectedContractor.id).length === 0
+                        {jobs.filter(j => j.assigned_contractor_id === selectedContractor.user_id).length === 0
                           ? <p className="detail-hint">No jobs assigned yet.</p>
                           : jobs
-                              .filter(j => j.assigned_contractor_id === selectedContractor.id)
-                              .map(j => (
-                                <div
-                                  key={j.id}
-                                  className="assigned-job-row"
-                                  onClick={() => { setView('jobs'); openJob(j); }}
-                                >
-                                  <span>{j.name}</span>
-                                  <span style={{ color: STATUS_COLORS[j.status || 'new'], fontSize: '0.75rem' }}>
-                                    {STATUS_LABELS[j.status || 'new']}
-                                  </span>
-                                </div>
-                              ))
+                            .filter(j => j.assigned_contractor_id === selectedContractor.user_id)
+                            .map(j => (
+                              <div key={j.id} className="assigned-job-row" onClick={() => { setView('jobs'); openJob(j); }}>
+                                <span>{j.name}</span>
+                                <span style={{ color: STATUS_COLORS[j.status || 'new'], fontSize: '0.75rem' }}>
+                                  {STATUS_LABELS[j.status || 'new']}
+                                </span>
+                              </div>
+                            ))
                         }
                       </div>
                     </div>

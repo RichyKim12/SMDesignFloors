@@ -568,3 +568,176 @@
 }
 
 .assigned-job-row:hover { border-color: #c4a882; }
+
+/* ── Contractor Toolbar ─────────────────────────────────── */
+
+.contractor-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+
+/* Search input */
+.contractor-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input, #f5f5f3);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 7px;
+  padding: 0 10px;
+  transition: border-color 0.15s;
+}
+
+.contractor-search-wrap:focus-within {
+  border-color: var(--accent, #c8953a);
+}
+
+.contractor-search-wrap svg {
+  opacity: 0.45;
+  flex-shrink: 0;
+}
+
+.contractor-search {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 0;
+  font-size: 0.82rem;
+  color: var(--text-primary, #1a1a1a);
+  outline: none;
+}
+
+.contractor-search::placeholder {
+  color: var(--text-muted, #999);
+}
+
+.search-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  color: var(--text-muted, #999);
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.search-clear:hover {
+  color: var(--text-primary, #1a1a1a);
+  background: var(--bg-hover, #ebebeb);
+}
+
+/* Filter row */
+.contractor-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Status pill group */
+.filter-pill-group {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-input, #f5f5f3);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 7px;
+  padding: 3px;
+}
+
+.filter-pill {
+  padding: 4px 11px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-secondary, #666);
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  background: var(--bg-hover, #ebebeb);
+  color: var(--text-primary, #1a1a1a);
+}
+
+.filter-pill.active {
+  background: var(--accent, #c8953a);
+  color: #fff;
+}
+
+/* Smaller select variant */
+.admin-select--sm {
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  height: auto;
+}
+
+/* Sort wrapper */
+.sort-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted, #999);
+}
+
+/* Clear filters button */
+.btn-clear-filters {
+  margin-left: auto;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: none;
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-clear-filters:hover {
+  border-color: var(--text-secondary, #666);
+  color: var(--text-primary, #1a1a1a);
+}
+
+/* Results meta line */
+.contractor-results-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted, #999);
+  padding: 0 2px 6px;
+}
+
+/* Overflow tag */
+.list-tag--more {
+  background: var(--bg-input, #f0f0ee);
+  color: var(--text-secondary, #777);
+  font-style: normal;
+}
+
+/* Empty state with action */
+.admin-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--accent, #c8953a);
+  text-decoration: underline;
+  padding: 0;
+}
