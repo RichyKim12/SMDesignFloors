@@ -174,11 +174,11 @@ export default function Professionals() {
 
     // ── GATE 1: client-side rate limit ────────────────────────
     // Blocks flooding before any network call is made.
-    const rate = checkRateLimit();
-    if (!rate.allowed) {
-      showErr(`Too many attempts. Please wait ${formatRetryTime(rate.retryAfterMs)} before trying again.`);
-      return;
-    }
+    // const rate = checkRateLimit();
+    // if (!rate.allowed) {
+    //   showErr(`Too many attempts. Please wait ${formatRetryTime(rate.retryAfterMs)} before trying again.`);
+    //   return;
+    // }
 
     setLoading(true);
     const form = e.target;
@@ -277,6 +277,8 @@ export default function Professionals() {
       .upsert({ id: userId, role: 'contractor', full_name: name, email });
 
     if (profileError) console.error('Profile upsert error:', profileError);
+
+    await supabase.auth.refreshSession();   
 
     // ── Reset ─────────────────────────────────────────────────
     setLoading(false);

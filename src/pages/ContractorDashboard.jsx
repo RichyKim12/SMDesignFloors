@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './ContractorDashboard.css';
 
 // ── icons ──────────────────────────────────────────────────
@@ -40,6 +41,7 @@ const STATUS_CONFIG = {
 };
 
 export default function ContractorDashboard() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [submission, setSubmission] = useState(null);
@@ -93,7 +95,7 @@ export default function ContractorDashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setRole(null);
+    // setRole(null);
     navigate('/');
   };
 
