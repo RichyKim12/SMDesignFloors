@@ -6,6 +6,19 @@
   padding: 120px 60px;
 }
 
+/* Screen-reader-only text — visually hidden, still announced by assistive tech */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* FORM */
 .form-card {
   background: white;
@@ -13,30 +26,25 @@
   border-radius: 12px;
   border: 1px solid #eee;
 }
-
 .form-title {
   font-size: 1.5rem;
   margin-bottom: 20px;
   font-weight: 500;
 }
-
 .form-row {
   display: flex;
   gap: 20px;
 }
-
 .form-group {
   flex: 1;
   display: flex;
   flex-direction: column;
   margin-bottom: 16px;
 }
-
 .form-group label {
   font-size: 0.85rem;
   margin-bottom: 6px;
 }
-
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -45,9 +53,55 @@
   border-radius: 6px;
   font-size: 0.9rem;
 }
-
+.form-group input:focus-visible,
+.form-group select:focus-visible,
+.form-group textarea:focus-visible {
+  outline: 2px solid #8b5e3c;
+  outline-offset: 1px;
+}
 textarea {
   min-height: 120px;
+}
+
+/* FIELDSETS */
+.form-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 20px;
+}
+.form-legend {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 10px;
+  padding: 0;
+}
+.form-legend-hint {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #6b6b6b;
+}
+.field-hint {
+  font-size: 0.75rem;
+  color: #6b6b6b;
+  margin-top: 4px;
+}
+
+/* ERROR BANNER */
+.form-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fbe5e2;
+  color: #a8281a;
+  border-left: 3px solid #a8281a;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+.form-error-banner:focus-visible {
+  outline: 2px solid #a8281a;
+  outline-offset: 2px;
 }
 
 /* SERVICES GRID */
@@ -68,35 +122,30 @@ textarea {
   overflow-x: auto;
   padding: 14px 16px;
 }
-
 .availability-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
 }
-
 .availability-table th {
   font-size: 0.78rem;
   font-weight: 500;
-  color: #888;
+  color: #666; /* was #888 — failed AA at 3.54:1, now 5.40:1 */
   text-align: center;
   padding: 0 4px 10px;
 }
-
 .availability-table th:first-child {
   text-align: left;
   width: 84px;
 }
-
 .availability-table td {
   text-align: center;
   padding: 4px;
 }
-
 .time-label {
   font-size: 0.78rem;
   font-weight: 500;
-  color: #888;
+  color: #666; /* was #888 — failed AA at 3.33:1, now 5.40:1 */
   text-align: left !important;
   padding-left: 0 !important;
   white-space: nowrap;
@@ -112,16 +161,18 @@ textarea {
   border: 1px solid #ddd;
   border-radius: 20px;
   background: white;
-  color: #999;
+  color: #6b6b6b; /* was #999 — failed AA at 2.85:1, now 5.33:1 */
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-
 .pill-btn:hover {
   border-color: #8b5e3c;
   color: #8b5e3c;
 }
-
+.pill-btn:focus-visible {
+  outline: 2px solid #8b5e3c;
+  outline-offset: 2px;
+}
 .pill-btn--active {
   background: #8b5e3c;
   border-color: #8b5e3c;
@@ -144,9 +195,18 @@ textarea {
   box-sizing: border-box;
 }
 .upload-zone:hover { border-color: #8b5e3c; }
-.upload-zone .upload-hint { font-size: 0.8rem; color: #888; font-weight: 300; }
-.upload-zone .upload-meta { font-size: 0.7rem; color: #bbb; }
-
+.upload-zone:focus-visible {
+  outline: 2px solid #8b5e3c;
+  outline-offset: 2px;
+}
+.upload-zone .upload-hint { font-size: 0.8rem; color: #6b6b6b; font-weight: 300; } /* was #888 */
+.upload-zone .upload-meta { font-size: 0.7rem; color: #6b6b6b; }                   /* was #bbb — failed badly at 1.82:1 */
+.upload-filename {
+  font-size: 0.8rem;
+  color: #3a3020;
+  font-weight: 500;
+  word-break: break-all;
+}
 
 .checkbox-item {
   display: flex;
@@ -155,7 +215,10 @@ textarea {
   font-size: 0.85rem;
   cursor: pointer;
 }
-
+.checkbox-item input[type="checkbox"]:focus-visible {
+  outline: 2px solid #8b5e3c;
+  outline-offset: 2px;
+}
 .small-note {
   font-size: 0.65rem;
   opacity: 0.7;
@@ -170,17 +233,26 @@ textarea {
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  width: 100%;
+}
+.form-submit:focus-visible {
+  outline: 2px solid #3a3020;
+  outline-offset: 2px;
+}
+.form-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* SUCCESS */
 .success-banner {
   margin-top: 12px;
   background: #e6f4ea;
+  color: #1e4d2b;
   padding: 10px;
   border-radius: 6px;
   display: none;
 }
-
 .success-banner.show {
   display: block;
 }
@@ -190,31 +262,26 @@ textarea {
   font-size: 2.2rem;
   margin-bottom: 16px;
 }
-
 .section-desc {
   font-size: 1rem;
   color: #666;
   margin-bottom: 24px;
 }
-
 .contact-detail {
   margin-top: 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
-
 .contact-item {
   padding-left: 14px;
   border-left: 2px solid #8b5e3c;
 }
-
-.contact-item h4 {
+.contact-item h3 {
   font-size: 0.9rem;
   font-weight: 500;
   margin-bottom: 3px;
 }
-
 .contact-item p {
   font-size: 0.85rem;
   color: #666;
@@ -228,15 +295,12 @@ textarea {
     grid-template-columns: 1fr;
     padding: 72px 24px;
   }
-
   .form-row {
     flex-direction: column;
   }
-
   .service-grid {
     grid-template-columns: 1fr;
   }
-
   .availability-table th:first-child {
     width: 68px;
   }

@@ -21,10 +21,8 @@ const SERVICES_NEEDED = [
   'Kitchen Remodel',
   'Other',
 ];
-
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TIMES = ['Morning', 'Afternoon'];
-
 const CONTACT_DETAILS = [
   { title: 'Phone', body: '(703) 580-1222' },
   { title: 'Service Area', body: 'Proudly Serving Northern Virginia, Maryland, and Greater Washington DC Area' },
@@ -42,22 +40,18 @@ function formatPhone(val) {
 export default function Contact() {
   const uid = useId();
   const fid = (name) => `${uid}-${name}`; // stable unique IDs for ADA
-
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
-
   const [selectedServices, setSelectedServices] = useState([]);
   const [availability, setAvailability] = useState([]);
   const [floorplanFile, setFloorplanFile] = useState(null);
   const [phone, setPhone] = useState('');
-
   const floorplanRef = useRef(null);
   const errorRef = useRef(null);
 
   // ── Helpers ──────────────────────────────────────────────────
-
   function showErr(msg) {
     setErrorMsg(msg);
     setShowError(true);
@@ -82,13 +76,11 @@ export default function Contact() {
   // ── File handler — MIME + magic-byte verified ─────────────────
   async function handleFileChange(file) {
     if (!file) { setFloorplanFile(null); return; }
-
     const mimeCheck = validateFile(file, 'floorplan');
     if (!mimeCheck.valid) {
       showErr(mimeCheck.message);
       return;
     }
-
     const magicOk = await verifyFileMagic(file);
     if (!magicOk) {
       showErr(
@@ -97,7 +89,6 @@ export default function Contact() {
       );
       return;
     }
-
     setFloorplanFile(file);
     setShowError(false);
   }
@@ -108,13 +99,10 @@ export default function Contact() {
     const safeName = sanitizeFileName(file.name);
     const ext = safeName.split('.').pop().replace(/[^a-z0-9]/gi, '').slice(0, 10);
     const path = `contact/${submissionId}/${fileType}-${Date.now()}.${ext}`;
-
     const { error: uploadError } = await supabase.storage
       .from('submissions-files')
       .upload(path, file);
-
     if (uploadError) { console.error('File upload error:', uploadError); return; }
-
     await supabase.from('contact_submission_files').insert([{
       submission_id: submissionId,
       file_name: safeName,
@@ -151,6 +139,7 @@ export default function Contact() {
     if (!name) { showErr('Please enter your name.'); return; }
     if (!email) { showErr('Please enter a valid email address.'); return; }
     if (!projectDesc) { showErr('Please describe your project.'); return; }
+
     console.log('inserting:', {
       name,
       email,
@@ -161,10 +150,8 @@ export default function Contact() {
       availability,
       project_desc: projectDesc,
     });
+
     const submissionId = crypto.randomUUID();
-
-
-
     const { error } = await supabase
       .from('contact_submissions')
       .insert([{
@@ -220,10 +207,8 @@ export default function Contact() {
           )}
 
           <form onSubmit={handleSubmit} noValidate aria-label="Quote request form">
-
             <fieldset className="form-fieldset">
               <legend className="form-legend">Your Details</legend>
-
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor={fid('name')}>
@@ -241,7 +226,6 @@ export default function Contact() {
                     aria-required="true"
                   />
                 </div>
-
                 <div className="form-group">
                   <label htmlFor={fid('email')}>
                     Email Address <span aria-hidden="true">*</span>
@@ -259,7 +243,6 @@ export default function Contact() {
                   />
                 </div>
               </div>
-
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor={fid('phone')}>Phone Number</label>
@@ -282,7 +265,6 @@ export default function Contact() {
 
             <fieldset className="form-fieldset">
               <legend className="form-legend">Project Details</legend>
-
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor={fid('budget')}>Estimated Budget</label>
@@ -295,7 +277,6 @@ export default function Contact() {
                     <option>$25,000+</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label htmlFor={fid('timeline')}>Desired Timeline</label>
                   <select id={fid('timeline')} name="timeline">
@@ -442,12 +423,12 @@ export default function Contact() {
         <h2 className="section-title">Let's Start Your <em>Project</em></h2>
         <p className="section-desc">
           Free estimates and consultations for all residential and commercial
-          projects. We provide quotes within 24 hours.
+          projects. We provide quotes within 24 hours. 
         </p>
         <div className="contact-detail">
           {CONTACT_DETAILS.map(c => (
             <div key={c.title} className="contact-item">
-              <h4>{c.title}</h4>
+              <h3>{c.title}</h3>
               <p>{c.body}</p>
             </div>
           ))}
