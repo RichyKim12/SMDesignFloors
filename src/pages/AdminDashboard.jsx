@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import './AdminDashboard.css';
@@ -41,6 +41,13 @@ export default function AdminDashboard() {
   const [jobNote, setJobNote] = useState('');
   const [assignContractorId, setAssignContractorId] = useState('');
 
+  // Jobs search & filters
+  const [jobSearch, setJobSearch] = useState('');
+  const [jobFilterStatus, setJobFilterStatus] = useState('all'); // 'all' | 'new' | 'in_progress' | 'completed'
+  const [jobFilterService, setJobFilterService] = useState('all');
+  const [jobFilterDate, setJobFilterDate] = useState('all'); // 'all' | 'today' | 'week' | 'month'
+  const [jobSortBy, setJobSortBy] = useState('newest');
+
   // Contractors state
   const [contractors, setContractors] = useState([]);
   const [contractorsLoading, setContractorsLoading] = useState(true);
@@ -49,11 +56,94 @@ export default function AdminDashboard() {
 
   // Contractor search & filter state
   const [contractorSearch, setContractorSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'approved' | 'pending'
+  const [filterStatus, setFilterStatus] = useState('all');
   const [filterProfession, setFilterProfession] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
 
+  // Autosave indicator: '' | 'saving' | 'saved'
+  const [saveIndicator, setSaveIndicator] = useState('');
+
+  // Refs to skip autosave on initial mount / job switch
+  const isFirstNoteRender = useRef(true);
+  const isFirstAssignRender = useRef(true);
+  const selectedJobId = useRef(null);
+
   useEffect(() => { fetchJobs(); fetchContractors(); }, []);
+
+  // ── Reset skip-refs whenever the selected job changes ──
+  useEffect(() => {
+    if (selectedJob?.id !== selectedJobId.current) {
+      selectedJobId.current = selectedJob?.id ?? null;
+      isFirstNoteRender.current = true;
+      isFirstAssignRender.current = true;
+    }
+  }, [selectedJob?.id]);
+
+  const flashSaved = () => {
+    setSaveIndicator('saving');
+    setTimeout(() => setSaveIndicator('saved'), 500);
+    setTimeout(() => setSaveIndicator(''), 2200);
+  };
+
+  // ── Autosave: admin notes ──
+  useEffect(() => {
+    if (!selectedJob) return;
+
+    if (isFirstNoteRender.current) {
+      isFirstNoteRender.current = false;
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      await supabase
+        .from('contact_submissions')
+        .update({ admin_notes: jobNote })
+        .eq('id', selectedJob.id);
+      setJobs(prev =>
+        prev.map(j => j.id === selectedJob.id ? { ...j, admin_notes: jobNote } : j)
+      );
+      flashSaved();
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [jobNote]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Autosave: contractor assignment ──
+  useEffect(() => {
+    if (!selectedJob) return;
+
+    if (isFirstAssignRender.current) {
+      isFirstAssignRender.current = false;
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      const contractor = approvedContractors.find(c => c.user_id === assignContractorId);
+      await supabase
+        .from('contact_submissions')
+        .update({
+          assigned_contractor_id: assignContractorId || null,
+          assigned_contractor_name: contractor?.name || '',
+        })
+        .eq('id', selectedJob.id);
+
+      setJobs(prev =>
+        prev.map(j =>
+          j.id === selectedJob.id
+            ? { ...j, assigned_contractor_id: assignContractorId, assigned_contractor_name: contractor?.name || '' }
+            : j
+        )
+      );
+      setSelectedJob(prev => ({
+        ...prev,
+        assigned_contractor_id: assignContractorId,
+        assigned_contractor_name: contractor?.name || '',
+      }));
+      flashSaved();
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [assignContractorId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchJobs = async () => {
     setJobsLoading(true);
@@ -76,6 +166,91 @@ export default function AdminDashboard() {
     setContractorsLoading(false);
   };
 
+  // ── Derived: all unique services across jobs ──
+  const allJobServices = useMemo(() => {
+    const set = new Set();
+    jobs.forEach(j => {
+      const svcs = Array.isArray(j.services) ? j.services : j.services ? [j.services] : [];
+      svcs.forEach(s => set.add(s));
+    });
+    return Array.from(set).sort();
+  }, [jobs]);
+
+  // ── Derived: filtered + sorted jobs ──
+  const filteredJobs = useMemo(() => {
+    let list = [...jobs];
+
+    // Status filter
+    if (jobFilterStatus !== 'all') {
+      list = list.filter(j => (j.status || 'new') === jobFilterStatus);
+    }
+
+    // Service type filter
+    if (jobFilterService !== 'all') {
+      list = list.filter(j => {
+        const svcs = Array.isArray(j.services) ? j.services : j.services ? [j.services] : [];
+        return svcs.includes(jobFilterService);
+      });
+    }
+
+    // Date range filter
+    if (jobFilterDate !== 'all') {
+      const now = new Date();
+      list = list.filter(j => {
+        if (!j.created_at) return false;
+        const created = new Date(j.created_at);
+        if (jobFilterDate === 'today') {
+          return created.toDateString() === now.toDateString();
+        }
+        if (jobFilterDate === 'week') {
+          const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+          return created >= weekAgo;
+        }
+        if (jobFilterDate === 'month') {
+          const monthAgo = new Date(now); monthAgo.setMonth(now.getMonth() - 1);
+          return created >= monthAgo;
+        }
+        return true;
+      });
+    }
+
+    // Text search
+    const q = jobSearch.trim().toLowerCase();
+    if (q) {
+      list = list.filter(j =>
+        (j.name || '').toLowerCase().includes(q) ||
+        (j.email || '').toLowerCase().includes(q) ||
+        (j.phone || '').toLowerCase().includes(q) ||
+        (j.project_desc || '').toLowerCase().includes(q) ||
+        (j.assigned_contractor_name || '').toLowerCase().includes(q) ||
+        (Array.isArray(j.services) ? j.services.join(' ') : j.services || '').toLowerCase().includes(q)
+      );
+    }
+
+    // Sort
+    list.sort((a, b) => {
+      if (jobSortBy === 'newest') return new Date(b.created_at) - new Date(a.created_at);
+      if (jobSortBy === 'oldest') return new Date(a.created_at) - new Date(b.created_at);
+      if (jobSortBy === 'name_az') return (a.name || '').localeCompare(b.name || '');
+      if (jobSortBy === 'name_za') return (b.name || '').localeCompare(a.name || '');
+      return 0;
+    });
+
+    return list;
+  }, [jobs, jobSearch, jobFilterStatus, jobFilterService, jobFilterDate, jobSortBy]);
+
+  const clearJobFilters = () => {
+    setJobSearch('');
+    setJobFilterStatus('all');
+    setJobFilterService('all');
+    setJobFilterDate('all');
+    setJobSortBy('newest');
+  };
+
+  const hasActiveJobFilters =
+    jobSearch || jobFilterStatus !== 'all' || jobFilterService !== 'all' ||
+    jobFilterDate !== 'all' || jobSortBy !== 'newest';
+
   // ── Derived: all unique professions across contractors ──
   const allProfessions = useMemo(() => {
     const set = new Set();
@@ -86,15 +261,13 @@ export default function AdminDashboard() {
     return Array.from(set).sort();
   }, [contractors]);
 
-  // ── Filtered + sorted contractor list ──
+  // ── Derived: filtered + sorted contractor list ──
   const filteredContractors = useMemo(() => {
     let list = [...contractors];
 
-    // Status filter
     if (filterStatus === 'approved') list = list.filter(c => c.approved);
     else if (filterStatus === 'pending') list = list.filter(c => !c.approved);
 
-    // Profession filter
     if (filterProfession !== 'all') {
       list = list.filter(c => {
         const profs = Array.isArray(c.professions) ? c.professions : c.professions ? [c.professions] : [];
@@ -102,7 +275,6 @@ export default function AdminDashboard() {
       });
     }
 
-    // Search: name, business, email
     const q = contractorSearch.trim().toLowerCase();
     if (q) {
       list = list.filter(c =>
@@ -113,7 +285,6 @@ export default function AdminDashboard() {
       );
     }
 
-    // Sort
     list.sort((a, b) => {
       if (sortBy === 'newest') return new Date(b.created_at) - new Date(a.created_at);
       if (sortBy === 'oldest') return new Date(a.created_at) - new Date(b.created_at);
@@ -132,7 +303,8 @@ export default function AdminDashboard() {
     setSortBy('newest');
   };
 
-  const hasActiveFilters = contractorSearch || filterStatus !== 'all' || filterProfession !== 'all' || sortBy !== 'newest';
+  const hasActiveFilters =
+    contractorSearch || filterStatus !== 'all' || filterProfession !== 'all' || sortBy !== 'newest';
 
   // ── Contractor actions ──
   const approveContractor = async (id) => {
@@ -164,30 +336,6 @@ export default function AdminDashboard() {
     if (selectedJob?.id === id) setSelectedJob(prev => ({ ...prev, status }));
   };
 
-  const saveJobNote = async () => {
-    await supabase.from('contact_submissions').update({ admin_notes: jobNote }).eq('id', selectedJob.id);
-    setJobs(prev => prev.map(j => j.id === selectedJob.id ? { ...j, admin_notes: jobNote } : j));
-    setSelectedJob(prev => ({ ...prev, admin_notes: jobNote }));
-  };
-
-  const assignJob = async () => {
-    const contractor = approvedContractors.find(c => c.user_id === assignContractorId);
-    await supabase.from('contact_submissions').update({
-      assigned_contractor_id: assignContractorId,
-      assigned_contractor_name: contractor?.name || '',
-    }).eq('id', selectedJob.id);
-    setJobs(prev => prev.map(j =>
-      j.id === selectedJob.id
-        ? { ...j, assigned_contractor_id: assignContractorId, assigned_contractor_name: contractor?.name }
-        : j
-    ));
-    setSelectedJob(prev => ({
-      ...prev,
-      assigned_contractor_id: assignContractorId,
-      assigned_contractor_name: contractor?.name,
-    }));
-  };
-
   const deleteJob = async (id) => {
     if (!confirm('Delete this job? This cannot be undone.')) return;
     await supabase.from('contact_submissions').delete().eq('id', id);
@@ -199,6 +347,7 @@ export default function AdminDashboard() {
     setSelectedJob(job);
     setJobNote(job.admin_notes || '');
     setAssignContractorId(job.assigned_contractor_id || '');
+    setSaveIndicator('');
   };
 
   const openContractor = (c) => setSelectedContractor(c);
@@ -246,13 +395,19 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <button className={`admin-nav-item ${view === 'jobs' ? 'active' : ''}`} onClick={() => setView('jobs')}>
+        <button
+          className={`admin-nav-item ${view === 'jobs' ? 'active' : ''}`}
+          onClick={() => setView('jobs')}
+        >
           <Icon d={Icons.jobs} size={16} />
           <span>Jobs</span>
           {jobStats.new > 0 && <span className="nav-badge">{jobStats.new}</span>}
         </button>
 
-        <button className={`admin-nav-item ${view === 'contractors' ? 'active' : ''}`} onClick={() => setView('contractors')}>
+        <button
+          className={`admin-nav-item ${view === 'contractors' ? 'active' : ''}`}
+          onClick={() => setView('contractors')}
+        >
           <Icon d={Icons.contractors} size={16} />
           <span>Contractors</span>
           {contractorStats.pending > 0 && <span className="nav-badge">{contractorStats.pending}</span>}
@@ -278,19 +433,123 @@ export default function AdminDashboard() {
                 <p className="admin-view-sub">Client contact submissions &amp; assignments</p>
               </div>
               <div className="stat-chips">
-                <div className="stat-chip" style={{ '--chip-color': '#c8953a' }}><span>{jobStats.new}</span> New</div>
-                <div className="stat-chip" style={{ '--chip-color': '#4a7fb5' }}><span>{jobStats.inProgress}</span> In Progress</div>
-                <div className="stat-chip" style={{ '--chip-color': '#2d8a5e' }}><span>{jobStats.completed}</span> Completed</div>
+                <div className="stat-chip" style={{ '--chip-color': '#c8953a' }}>
+                  <span>{jobStats.new}</span> New
+                </div>
+                <div className="stat-chip" style={{ '--chip-color': '#4a7fb5' }}>
+                  <span>{jobStats.inProgress}</span> In Progress
+                </div>
+                <div className="stat-chip" style={{ '--chip-color': '#2d8a5e' }}>
+                  <span>{jobStats.completed}</span> Completed
+                </div>
               </div>
             </div>
 
+            {/* ── Jobs search + filter bar ── */}
+            <div className="contractor-toolbar">
+              <div className="contractor-search-wrap">
+                <Icon d={Icons.search} size={15} />
+                <input
+                  className="contractor-search"
+                  type="text"
+                  placeholder="Search by name, email, phone, description…"
+                  value={jobSearch}
+                  onChange={e => setJobSearch(e.target.value)}
+                />
+                {jobSearch && (
+                  <button className="search-clear" onClick={() => setJobSearch('')}>
+                    <Icon d={Icons.x} size={13} />
+                  </button>
+                )}
+              </div>
+
+              <div className="contractor-filters">
+                {/* Status filter pills */}
+                <div className="filter-pill-group">
+                  {['all', 'new', 'in_progress', 'completed'].map(s => (
+                    <button
+                      key={s}
+                      className={`filter-pill ${jobFilterStatus === s ? 'active' : ''}`}
+                      style={jobFilterStatus === s && s !== 'all'
+                        ? { '--pill-active-color': STATUS_COLORS[s] }
+                        : {}
+                      }
+                      onClick={() => setJobFilterStatus(s)}
+                    >
+                      {s === 'all' ? 'All' : STATUS_LABELS[s]}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Date range filter */}
+                <select
+                  className="admin-select admin-select--sm"
+                  value={jobFilterDate}
+                  onChange={e => setJobFilterDate(e.target.value)}
+                >
+                  <option value="all">Any Date</option>
+                  <option value="today">Today</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                </select>
+
+                {/* Service type filter */}
+                {allJobServices.length > 0 && (
+                  <select
+                    className="admin-select admin-select--sm"
+                    value={jobFilterService}
+                    onChange={e => setJobFilterService(e.target.value)}
+                  >
+                    <option value="all">All Services</option>
+                    {allJobServices.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                )}
+
+                {/* Sort */}
+                <div className="sort-wrap">
+                  <Icon d={Icons.sort} size={14} />
+                  <select
+                    className="admin-select admin-select--sm"
+                    value={jobSortBy}
+                    onChange={e => setJobSortBy(e.target.value)}
+                  >
+                    {SORT_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {hasActiveJobFilters && (
+                  <button className="btn-clear-filters" onClick={clearJobFilters}>
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Results count */}
+            <div className="contractor-results-meta">
+              {filteredJobs.length} of {jobs.length} job{jobs.length !== 1 ? 's' : ''}
+              {hasActiveJobFilters && ' (filtered)'}
+            </div>
+
             <div className="admin-split">
+              {/* Job list */}
               <div className="admin-list">
                 {jobsLoading
                   ? <div className="admin-loading">Loading jobs…</div>
-                  : jobs.length === 0
-                    ? <div className="admin-empty">No jobs yet.</div>
-                    : jobs.map(job => (
+                  : filteredJobs.length === 0
+                    ? (
+                      <div className="admin-empty">
+                        {hasActiveJobFilters ? 'No jobs match your filters.' : 'No jobs yet.'}
+                        {hasActiveJobFilters && (
+                          <button className="btn-text" onClick={clearJobFilters}>Clear filters</button>
+                        )}
+                      </div>
+                    )
+                    : filteredJobs.map(job => (
                       <div
                         key={job.id}
                         className={`admin-list-item ${selectedJob?.id === job.id ? 'selected' : ''}`}
@@ -298,7 +557,10 @@ export default function AdminDashboard() {
                       >
                         <div className="list-item-top">
                           <span className="list-item-name">{job.name}</span>
-                          <span className="list-item-status" style={{ color: STATUS_COLORS[job.status || 'new'] }}>
+                          <span
+                            className="list-item-status"
+                            style={{ color: STATUS_COLORS[job.status || 'new'] }}
+                          >
                             {STATUS_LABELS[job.status || 'new']}
                           </span>
                         </div>
@@ -307,13 +569,16 @@ export default function AdminDashboard() {
                           <span>{formatDate(job.created_at)}</span>
                         </div>
                         {job.assigned_contractor_name && (
-                          <div className="list-item-assigned">Assigned: {job.assigned_contractor_name}</div>
+                          <div className="list-item-assigned">
+                            Assigned: {job.assigned_contractor_name}
+                          </div>
                         )}
                       </div>
                     ))
                 }
               </div>
 
+              {/* Job detail */}
               <div className="admin-detail">
                 {!selectedJob
                   ? <div className="admin-detail-empty">Select a job to view details</div>
@@ -324,7 +589,16 @@ export default function AdminDashboard() {
                           <h2 className="detail-title">{selectedJob.name}</h2>
                           <p className="detail-sub">{selectedJob.email} · {selectedJob.phone}</p>
                         </div>
-                        <button className="btn-delete" onClick={() => deleteJob(selectedJob.id)}>Delete</button>
+                        <div className="detail-header-actions">
+                          {saveIndicator && (
+                            <span className={`save-indicator save-indicator--${saveIndicator}`}>
+                              {saveIndicator === 'saving' ? 'Saving…' : '✓ Saved'}
+                            </span>
+                          )}
+                          <button className="btn-delete" onClick={() => deleteJob(selectedJob.id)}>
+                            Delete
+                          </button>
+                        </div>
                       </div>
 
                       <div className="detail-section">
@@ -346,30 +620,69 @@ export default function AdminDashboard() {
                       <div className="detail-section">
                         <div className="detail-section-label">Job Details</div>
                         <div className="detail-grid">
-                          {selectedJob.services && (<><span className="dg-label">Services</span><span>{Array.isArray(selectedJob.services) ? selectedJob.services.join(', ') : selectedJob.services}</span></>)}
-                          {selectedJob.budget && (<><span className="dg-label">Budget</span><span>{selectedJob.budget}</span></>)}
-                          {selectedJob.timeline && (<><span className="dg-label">Timeline</span><span>{selectedJob.timeline}</span></>)}
-                          {selectedJob.project_desc && (<><span className="dg-label">Description</span><span>{selectedJob.project_desc}</span></>)}
-                          {selectedJob.availability && (<><span className="dg-label">Availability</span><span>{Array.isArray(selectedJob.availability) ? selectedJob.availability.join(', ') : selectedJob.availability}</span></>)}
+                          {selectedJob.services && (
+                            <>
+                              <span className="dg-label">Services</span>
+                              <span>
+                                {Array.isArray(selectedJob.services)
+                                  ? selectedJob.services.join(', ')
+                                  : selectedJob.services}
+                              </span>
+                            </>
+                          )}
+                          {selectedJob.budget && (
+                            <>
+                              <span className="dg-label">Budget</span>
+                              <span>{selectedJob.budget}</span>
+                            </>
+                          )}
+                          {selectedJob.timeline && (
+                            <>
+                              <span className="dg-label">Timeline</span>
+                              <span>{selectedJob.timeline}</span>
+                            </>
+                          )}
+                          {selectedJob.project_desc && (
+                            <>
+                              <span className="dg-label">Description</span>
+                              <span>{selectedJob.project_desc}</span>
+                            </>
+                          )}
+                          {selectedJob.availability && (
+                            <>
+                              <span className="dg-label">Availability</span>
+                              <span>
+                                {Array.isArray(selectedJob.availability)
+                                  ? selectedJob.availability.join(', ')
+                                  : selectedJob.availability}
+                              </span>
+                            </>
+                          )}
                           <span className="dg-label">Submitted</span>
                           <span>{formatDate(selectedJob.created_at)}</span>
                         </div>
                       </div>
 
                       <div className="detail-section">
-                        <div className="detail-section-label">Assign Contractor</div>
+                        <div className="detail-section-label">
+                          Assign Contractor
+                          <span className="autosave-hint">autosaves on change</span>
+                        </div>
                         {approvedContractors.length === 0
                           ? <p className="detail-hint">No approved contractors yet.</p>
                           : (
-                            <div className="assign-row">
-                              <select className="admin-select" value={assignContractorId} onChange={e => setAssignContractorId(e.target.value)}>
-                                <option value="">— Unassigned —</option>
-                                {approvedContractors.map(c => (
-                                  <option key={c.user_id} value={c.user_id}>{c.name} · {c.business || c.email}</option>
-                                ))}
-                              </select>
-                              <button className="btn-primary" onClick={assignJob}>Save</button>
-                            </div>
+                            <select
+                              className="admin-select"
+                              value={assignContractorId}
+                              onChange={e => setAssignContractorId(e.target.value)}
+                            >
+                              <option value="">— Unassigned —</option>
+                              {approvedContractors.map(c => (
+                                <option key={c.user_id} value={c.user_id}>
+                                  {c.name} · {c.business || c.email}
+                                </option>
+                              ))}
+                            </select>
                           )
                         }
                         {selectedJob.assigned_contractor_name && (
@@ -380,7 +693,10 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="detail-section">
-                        <div className="detail-section-label">Admin Notes</div>
+                        <div className="detail-section-label">
+                          Admin Notes
+                          <span className="autosave-hint">autosaves on change</span>
+                        </div>
                         <textarea
                           className="admin-textarea"
                           value={jobNote}
@@ -388,7 +704,6 @@ export default function AdminDashboard() {
                           placeholder="Add internal notes about this job…"
                           rows={4}
                         />
-                        <button className="btn-primary" style={{ marginTop: 8 }} onClick={saveJobNote}>Save Notes</button>
                       </div>
                     </div>
                   )
@@ -407,8 +722,12 @@ export default function AdminDashboard() {
                 <p className="admin-view-sub">ProServices applications &amp; approvals</p>
               </div>
               <div className="stat-chips">
-                <div className="stat-chip" style={{ '--chip-color': '#c8953a' }}><span>{contractorStats.pending}</span> Pending</div>
-                <div className="stat-chip" style={{ '--chip-color': '#2d8a5e' }}><span>{contractorStats.approved}</span> Approved</div>
+                <div className="stat-chip" style={{ '--chip-color': '#c8953a' }}>
+                  <span>{contractorStats.pending}</span> Pending
+                </div>
+                <div className="stat-chip" style={{ '--chip-color': '#2d8a5e' }}>
+                  <span>{contractorStats.approved}</span> Approved
+                </div>
               </div>
             </div>
 
@@ -431,7 +750,6 @@ export default function AdminDashboard() {
               </div>
 
               <div className="contractor-filters">
-                {/* Status filter pills */}
                 <div className="filter-pill-group">
                   {['all', 'approved', 'pending'].map(s => (
                     <button
@@ -444,7 +762,6 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
-                {/* Profession filter */}
                 {allProfessions.length > 0 && (
                   <select
                     className="admin-select admin-select--sm"
@@ -458,7 +775,6 @@ export default function AdminDashboard() {
                   </select>
                 )}
 
-                {/* Sort */}
                 <div className="sort-wrap">
                   <Icon d={Icons.sort} size={14} />
                   <select
@@ -472,7 +788,6 @@ export default function AdminDashboard() {
                   </select>
                 </div>
 
-                {/* Clear filters */}
                 {hasActiveFilters && (
                   <button className="btn-clear-filters" onClick={clearContractorFilters}>
                     Clear
@@ -509,7 +824,10 @@ export default function AdminDashboard() {
                       >
                         <div className="list-item-top">
                           <span className="list-item-name">{c.name}</span>
-                          <span className="list-item-status" style={{ color: c.approved ? '#3a9c6b' : '#c8953a' }}>
+                          <span
+                            className="list-item-status"
+                            style={{ color: c.approved ? '#3a9c6b' : '#c8953a' }}
+                          >
                             {c.approved ? 'Approved' : 'Pending'}
                           </span>
                         </div>
@@ -544,12 +862,16 @@ export default function AdminDashboard() {
                       <div className="detail-header">
                         <div>
                           <h2 className="detail-title">{selectedContractor.name}</h2>
-                          <p className="detail-sub">{selectedContractor.business || '—'} · {selectedContractor.email}</p>
+                          <p className="detail-sub">
+                            {selectedContractor.business || '—'} · {selectedContractor.email}
+                          </p>
                         </div>
                         <span
                           className="detail-badge"
                           style={{
-                            background: selectedContractor.approved ? 'rgba(58,156,107,0.12)' : 'rgba(200,149,58,0.12)',
+                            background: selectedContractor.approved
+                              ? 'rgba(58,156,107,0.12)'
+                              : 'rgba(200,149,58,0.12)',
                             color: selectedContractor.approved ? '#3a9c6b' : '#c8953a',
                             border: `1px solid ${selectedContractor.approved ? '#3a9c6b' : '#c8953a'}`,
                           }}
@@ -562,8 +884,22 @@ export default function AdminDashboard() {
                         <div className="detail-section-label">Approval</div>
                         <div className="assign-row">
                           {!selectedContractor.approved
-                            ? <button className="btn-approve" onClick={() => approveContractor(selectedContractor.user_id)}>Approve Contractor</button>
-                            : <button className="btn-revoke" onClick={() => revokeContractor(selectedContractor.user_id)}>Revoke Approval</button>
+                            ? (
+                              <button
+                                className="btn-approve"
+                                onClick={() => approveContractor(selectedContractor.user_id)}
+                              >
+                                Approve Contractor
+                              </button>
+                            )
+                            : (
+                              <button
+                                className="btn-revoke"
+                                onClick={() => revokeContractor(selectedContractor.user_id)}
+                              >
+                                Revoke Approval
+                              </button>
+                            )
                           }
                         </div>
                       </div>
@@ -571,11 +907,16 @@ export default function AdminDashboard() {
                       <div className="detail-section">
                         <div className="detail-section-label">Profile</div>
                         <div className="detail-grid">
-                          <span className="dg-label">Phone</span><span>{selectedContractor.phone || '—'}</span>
-                          <span className="dg-label">Service Area</span><span>{selectedContractor.service_area || '—'}</span>
-                          <span className="dg-label">Specialty</span><span>{selectedContractor.years_exp || '—'}</span>
-                          <span className="dg-label">Website</span><span>{selectedContractor.website || '—'}</span>
-                          <span className="dg-label">Applied</span><span>{formatDate(selectedContractor.created_at)}</span>
+                          <span className="dg-label">Phone</span>
+                          <span>{selectedContractor.phone || '—'}</span>
+                          <span className="dg-label">Service Area</span>
+                          <span>{selectedContractor.service_area || '—'}</span>
+                          <span className="dg-label">Specialty</span>
+                          <span>{selectedContractor.years_exp || '—'}</span>
+                          <span className="dg-label">Website</span>
+                          <span>{selectedContractor.website || '—'}</span>
+                          <span className="dg-label">Applied</span>
+                          <span>{formatDate(selectedContractor.created_at)}</span>
                         </div>
                       </div>
 
@@ -583,8 +924,10 @@ export default function AdminDashboard() {
                         <div className="detail-section">
                           <div className="detail-section-label">Professions</div>
                           <div className="list-item-tags" style={{ marginTop: 8 }}>
-                            {(Array.isArray(selectedContractor.professions) ? selectedContractor.professions : [selectedContractor.professions])
-                              .map(p => <span key={p} className="list-tag">{p}</span>)}
+                            {(Array.isArray(selectedContractor.professions)
+                              ? selectedContractor.professions
+                              : [selectedContractor.professions]
+                            ).map(p => <span key={p} className="list-tag">{p}</span>)}
                           </div>
                         </div>
                       )}
@@ -593,8 +936,10 @@ export default function AdminDashboard() {
                         <div className="detail-section">
                           <div className="detail-section-label">Availability</div>
                           <div className="list-item-tags" style={{ marginTop: 8 }}>
-                            {(Array.isArray(selectedContractor.availability) ? selectedContractor.availability : [selectedContractor.availability])
-                              .map(a => <span key={a} className="list-tag">{a}</span>)}
+                            {(Array.isArray(selectedContractor.availability)
+                              ? selectedContractor.availability
+                              : [selectedContractor.availability]
+                            ).map(a => <span key={a} className="list-tag">{a}</span>)}
                           </div>
                         </div>
                       )}
@@ -606,7 +951,11 @@ export default function AdminDashboard() {
                           : jobs
                             .filter(j => j.assigned_contractor_id === selectedContractor.user_id)
                             .map(j => (
-                              <div key={j.id} className="assigned-job-row" onClick={() => { setView('jobs'); openJob(j); }}>
+                              <div
+                                key={j.id}
+                                className="assigned-job-row"
+                                onClick={() => { setView('jobs'); openJob(j); }}
+                              >
                                 <span>{j.name}</span>
                                 <span style={{ color: STATUS_COLORS[j.status || 'new'], fontSize: '0.75rem' }}>
                                   {STATUS_LABELS[j.status || 'new']}

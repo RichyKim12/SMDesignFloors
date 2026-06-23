@@ -741,3 +741,39 @@
   text-decoration: underline;
   padding: 0;
 }
+
+
+.detail-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.save-indicator--saving {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  color: #c8953a;
+  background: rgba(200, 149, 58, 0.12);
+}
+.save-indicator--saved {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  color: #3a9c6b;
+  background: rgba(58, 156, 107, 0.12);
+}
+.autosave-hint {
+  font-size: 0.68rem;
+  font-weight: 400;
+  opacity: 0.45;
+  margin-left: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.filter-pill.active {
+  color: var(--pill-active-color, currentColor);
+  border-color: var(--pill-active-color, currentColor);
+  background: color-mix(in srgb, var(--pill-active-color, currentColor) 12%, transparent);
+}
