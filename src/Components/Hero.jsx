@@ -1,6 +1,6 @@
 import './Hero.css';
-import imgStorefront from '../assets/Hero/image2.png';
-import imgShowroom from '../assets/Hero/image3.jpg';
+import imgStorefront from '../assets/Hero/image4.jpg';
+import imgShowroom from '../assets/Hero/image5.JPG';
 import imgWork from '../assets/Hero/image1.JPG';
 
 export default function Hero() {
@@ -29,11 +29,11 @@ export default function Hero() {
         </div>
         <div className="img-box">
           <img src={imgStorefront} alt="SM Floors storefront" />
-          <div className="img-label">Our Store</div>
+          
         </div>
         <div className="img-box">
           <img src={imgShowroom} alt="Our showroom" />
-          <div className="img-label">Our Showroom</div>
+          
         </div>
         
       </div>

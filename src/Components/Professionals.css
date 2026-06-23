@@ -10,25 +10,42 @@
 .sticky-info { position: sticky; top: 100px; }
 
 .feature-list { margin-top: 40px; display: flex; flex-direction: column; gap: 20px; }
-.feature-item { display: flex; gap: 16px; align-items: flex-start; }
-.feature-icon {
-  width: 42px; height: 42px; background: var(--tan);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem; flex-shrink: 0;
-}
+.feature-item { padding-left: 14px; border-left: 2px solid var(--tan); }
 .feature-item h4 { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; margin-bottom: 3px; }
 .feature-item p  { font-size: 0.82rem; color: var(--mid); line-height: 1.6; font-weight: 300; }
 
+.upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.upload-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.upload-field-label {
+  font-size: 0.75rem;
+  color: var(--mid);
+  font-weight: 400;
+}
+
 .upload-zone {
   border: 1.5px dashed var(--tan); background: var(--cream);
-  padding: 28px 20px; text-align: center; cursor: pointer;
+  padding: 14px 10px; text-align: center; cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 .upload-zone:hover { border-color: var(--tan-dark); background: var(--cream-dark); }
-.upload-zone .upload-icon { font-size: 2rem; margin-bottom: 8px; }
-.upload-zone .upload-filename { font-size: 0.87rem; color: var(--tan-dark); font-weight: 400; margin-top: 8px; }
-.upload-zone .upload-hint    { font-size: 0.87rem; color: var(--mid); font-weight: 300; }
-.upload-zone .upload-meta    { font-size: 0.7rem; color: var(--mid); opacity: 0.7; margin-top: 6px; }
+.upload-zone .upload-filename { font-size: 0.75rem; color: var(--tan-dark); font-weight: 400; word-break: break-all; }
+.upload-zone .upload-hint    { font-size: 0.75rem; color: var(--mid); font-weight: 300; }
+.upload-zone .upload-meta    { font-size: 0.68rem; color: var(--mid); opacity: 0.7; }
 
 .profession-grid {
   display: grid;
@@ -39,13 +56,72 @@
   background: var(--cream);
 }
 
-.availability-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px 20px;
-  padding: 16px;
+/* AVAILABILITY PILL TABLE */
+.availability-table-wrapper {
   border: 1.5px solid var(--cream-dark);
+  border-radius: 4px;
   background: var(--cream);
+  overflow-x: auto;
+  padding: 14px 16px;
+}
+
+.availability-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.availability-table th {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--mid);
+  text-align: center;
+  padding: 0 4px 10px;
+}
+
+.availability-table th:first-child {
+  text-align: left;
+  width: 84px;
+}
+
+.availability-table td {
+  text-align: center;
+  padding: 4px;
+}
+
+.time-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--mid);
+  text-align: left !important;
+  padding-left: 0 !important;
+  white-space: nowrap;
+}
+
+/* PILL BUTTONS */
+.pill-btn {
+  display: inline-block;
+  width: 100%;
+  padding: 6px 0;
+  font-size: 0.75rem;
+  font-family: inherit;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 20px;
+  background: var(--cream);
+  color: var(--mid);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.pill-btn:hover {
+  border-color: var(--tan-dark);
+  color: var(--tan-dark);
+}
+
+.pill-btn--active {
+  background: var(--tan);
+  border-color: var(--tan);
+  color: white;
 }
 
 .checkbox-item {
@@ -59,4 +135,152 @@
 @media (max-width: 900px) {
   #professionals { grid-template-columns: 1fr; gap: 48px; padding: 72px 24px; }
   .sticky-info { position: static; }
+
+  .availability-table th:first-child {
+    width: 68px;
+  }
+
+  .upload-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ── Account creation notice ── */
+.account-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--tan-light, #f5f0e8);
+  border-left: 3px solid var(--tan-dark, #b89c6e);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 24px;
+  font-size: 0.82rem;
+  color: var(--mid, #555);
+  line-height: 1.6;
+}
+
+.form-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.form-legend {
+  padding: 0;
+  margin-bottom: 8px;
+  /* match whatever your existing label styles look like */
+}
+
+.account-notice p {
+  margin: 0;
+}
+
+.account-notice strong {
+  color: var(--tan-dark, #b89c6e);
+}
+
+/* ── Password section ── */
+.password-section {
+  border-top: 1px solid var(--tan-light, #e8e0d0);
+  margin-top: 24px;
+  padding-top: 20px;
+}
+
+.password-section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tan-dark, #b89c6e);
+  margin-bottom: 14px;
+}
+
+.field-hint {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--mid, #888);
+  margin-top: 4px;
+}
+
+/* ── Error banner ── */
+.form-error-banner {
+  background: #fff0f0;
+  border-left: 3px solid #c0392b;
+  border-radius: 6px;
+  color: #c0392b;
+  font-size: 0.82rem;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+/* ── Submit button tweak ── */
+.form-submit {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* ── Legal line ── */
+.form-legal {
+  font-size: 0.7rem;
+  color: var(--mid, #999);
+  text-align: center;
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+/* ── Verification modal ── */
+.verification-modal {
+  background: var(--white, #fff);
+  border-radius: 12px;
+  padding: 40px 36px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.verification-icon {
+  font-size: 2.8rem;
+  margin-bottom: 16px;
+  line-height: 1;
+}
+
+.verification-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--dark, #1a1a1a);
+  margin: 0 0 12px;
+}
+
+.verification-body {
+  font-size: 0.88rem;
+  color: var(--mid, #555);
+  line-height: 1.7;
+  margin-bottom: 8px;
+}
+
+.verification-sub {
+  font-size: 0.78rem;
+  color: var(--mid, #999);
+  margin-bottom: 24px;
+}
+
+.verification-btn {
+  background: var(--tan-dark, #b89c6e);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 32px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.verification-btn:hover {
+  opacity: 0.85;
 }

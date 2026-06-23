@@ -1,131 +1,171 @@
-.services-section {
+/* ── Section ── */
+.svc-section {
   padding: 120px 60px;
+  background: var(--cream);
 }
 
-/* ── About block ── */
-.about-block {
+.svc-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #8A7A58;
+  margin-bottom: 16px;
+}
+
+.svc-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 3rem;
+  font-weight: 300;
+  margin-bottom: 60px;
+  color: #2C2519;
+}
+
+.svc-title em {
+  font-style: italic;
+  color: #8A7A58;
+}
+
+/* ── About ── */
+.svc-about {
   max-width: 820px;
   margin-bottom: 60px;
 }
 
-.about-heading {
+.svc-about-heading {
   font-family: 'Cormorant Garamond', serif;
   font-size: 1.8rem;
   font-weight: 400;
-  color: var(--dark);
+  color: #2C2519;
   margin-bottom: 20px;
 }
 
-.about-text {
+.svc-about-text {
   font-size: 0.95rem;
   line-height: 1.85;
-  color: var(--mid);
+  color: #5C5240;
   font-weight: 300;
   margin-bottom: 18px;
 }
 
-/* ── Services Grid ── */
-.services-grid {
+.svc-about-text--last {
+  margin-bottom: 0;
+}
+
+/* ── Grid ── */
+.svc-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2px;
 }
 
-.service-card {
-  padding: 48px 36px;
+/* ── Card ── */
+.svc-card {
   position: relative;
+  min-height: 380px;
   overflow: hidden;
-  transition: transform 0.3s;
   cursor: default;
-  min-height: 340px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
 }
 
-.service-card-bg {
+.svc-card-img {
   position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  display: block;
   transition: transform 0.45s ease;
 }
 
-.service-card:hover .service-card-bg {
+.svc-card:hover .svc-card-img {
   transform: scale(1.05);
 }
 
-/* Stronger overlay for real photos — ensures text is always legible */
-.service-card-overlay {
+.svc-card-overlay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(
     to top,
-    rgba(10, 6, 2, 0.96) 0%,
-    rgba(10, 6, 2, 0.72) 45%,
-    rgba(10, 6, 2, 0.35) 100%
+    rgba(10, 6, 2, 0.97) 0%,
+    rgba(10, 6, 2, 0.65) 50%,
+    rgba(10, 6, 2, 0.2) 100%
   );
+  z-index: 1;
 }
 
-.service-card-content {
+.svc-card-content {
   position: relative;
   z-index: 2;
+  padding: 36px;
 }
 
-.service-card::after {
+.svc-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 3rem;
+  color: #C9BA96;
+  opacity: 0.75;
+  line-height: 1;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.svc-card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+  margin-bottom: 10px;
+  color: #f5f0e8;
+}
+
+.svc-card-desc {
+  font-size: 0.87rem;
+  line-height: 1.75;
+  color: rgba(245, 240, 232, 0.82);
+  font-weight: 300;
+}
+
+/* ── Hover accent line ── */
+.svc-card::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 3px;
-  background: var(--tan);
+  background: #B5A47A;
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.35s ease;
   z-index: 3;
 }
 
-.service-card:hover::after {
+.svc-card:hover::after {
   transform: scaleX(1);
 }
 
-.service-card:hover {
+.svc-card:hover {
   transform: translateY(-4px);
-}
-
-.service-num {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 3.5rem;
-  color: var(--tan-light);
-  opacity: 0.75;
-  line-height: 1;
-  margin-bottom: 14px;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
-}
-
-.service-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.6rem;
-  font-weight: 400;
-  margin-bottom: 12px;
-  color: #f5f0e8;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.7);
-}
-
-.service-desc {
-  font-size: 0.87rem;
-  line-height: 1.75;
-  color: rgba(245, 240, 232, 0.85);
-  font-weight: 300;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.7);
+  transition: transform 0.3s;
 }
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
-  .services-section {
+  .svc-section {
     padding: 72px 24px;
   }
 
-  .services-grid {
+  .svc-grid {
     grid-template-columns: 1fr;
+  }
+
+  .svc-card {
+    min-height: 300px;
   }
 }

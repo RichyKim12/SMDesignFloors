@@ -60,17 +60,94 @@ textarea {
   background: #fafafa;
 }
 
-/* AVAILABILITY GRID */
-.availability-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px 20px;
-  padding: 16px;
+/* AVAILABILITY PILL TABLE */
+.availability-table-wrapper {
   border: 1px solid #eee;
+  border-radius: 8px;
   background: #fdf7f0;
+  overflow-x: auto;
+  padding: 14px 16px;
 }
 
-/* CHECKBOX ITEMS */
+.availability-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.availability-table th {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #888;
+  text-align: center;
+  padding: 0 4px 10px;
+}
+
+.availability-table th:first-child {
+  text-align: left;
+  width: 84px;
+}
+
+.availability-table td {
+  text-align: center;
+  padding: 4px;
+}
+
+.time-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #888;
+  text-align: left !important;
+  padding-left: 0 !important;
+  white-space: nowrap;
+}
+
+/* PILL BUTTONS */
+.pill-btn {
+  display: inline-block;
+  width: 100%;
+  padding: 6px 0;
+  font-size: 0.75rem;
+  font-family: inherit;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background: white;
+  color: #999;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.pill-btn:hover {
+  border-color: #8b5e3c;
+  color: #8b5e3c;
+}
+
+.pill-btn--active {
+  background: #8b5e3c;
+  border-color: #8b5e3c;
+  color: white;
+}
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 1px dashed #c4a882;
+  background: #fdf8f2;
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.upload-zone:hover { border-color: #8b5e3c; }
+.upload-zone .upload-hint { font-size: 0.8rem; color: #888; font-weight: 300; }
+.upload-zone .upload-meta { font-size: 0.7rem; color: #bbb; }
+
+
 .checkbox-item {
   display: flex;
   align-items: center;
@@ -115,7 +192,7 @@ textarea {
 }
 
 .section-desc {
-  font-size: 1rem; /*increased from 0.9 rem*/
+  font-size: 1rem;
   color: #666;
   margin-bottom: 24px;
 }
@@ -128,12 +205,21 @@ textarea {
 }
 
 .contact-item {
-  display: flex;
-  gap: 14px;
+  padding-left: 14px;
+  border-left: 2px solid #8b5e3c;
 }
 
-.contact-icon {
-  font-size: 1.2rem;
+.contact-item h4 {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+.contact-item p {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* MOBILE */
@@ -147,8 +233,11 @@ textarea {
     flex-direction: column;
   }
 
-  .service-grid,
-  .availability-grid {
+  .service-grid {
     grid-template-columns: 1fr;
+  }
+
+  .availability-table th:first-child {
+    width: 68px;
   }
 }

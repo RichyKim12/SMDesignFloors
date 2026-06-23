@@ -1,83 +1,90 @@
-import '../styles/Services.css';
+import './Services.css';
 
 const services = [
   {
     num: '01',
     title: 'Bathroom Remodel',
     desc: 'Complete bathroom transformations including tile work, shower and tub surround installation, vanity upgrades, and bespoke design consultation.',
-    bg: 'sc-bathroom',
     img: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80',
   },
   {
     num: '02',
     title: 'Kitchen Remodel',
     desc: 'Backsplash, flooring, and full kitchen overhauls. We breathe new life into kitchens with precision tile work and expert flooring solutions.',
-    bg: 'sc-kitchen',
-    img: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80',
+    img: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?q=80&w=2374&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?w=800&q=80',
   },
   {
     num: '03',
     title: 'Hardwood Flooring',
     desc: 'Timeless hardwood installation and refinishing for any space. We source premium solid and engineered hardwood and handle everything from subfloor prep to the final finish coat.',
-    bg: 'sc-hardwood',
-    img: 'https://images.unsplash.com/photo-1562663474-6cbb3eaa4d14?w=800&q=80',
+    img: 'https://images.unsplash.com/photo-1560185008-b033106af5c3?w=1200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fGhhcmR3b29kfGVufDB8fDB8fHww?w=800&q=80',
   },
   {
     num: '04',
     title: 'Plumbing',
     desc: 'Reliable plumbing services to support your remodeling projects, from fixture installations and upgrades to full bathroom and kitchen plumbing work.',
-    bg: 'sc-plumbing',
-    img: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&q=80',
+    img: 'https://images.unsplash.com/photo-1521207418485-99c705420785?w=1200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjJ8fHBsdW1iaW5nfGVufDB8fDB8fHww?w=800&q=80',
   },
   {
     num: '05',
     title: 'LVP & LVT Flooring',
-    desc: 'Expert installation of luxury vinyl plank and tile flooring — durable, waterproof, and available in a wide variety of styles to complement any interior.',
-    bg: 'sc-lvp',
-    img: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=800&q=80',
+    desc: 'Professional interior and exterior painting services — delivering smooth, high-quality finishes with careful surface preparation, clean lines, and durable results that refresh and protect your home.',
+    img: 'https://images.unsplash.com/photo-1646592474084-fb3740181648?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?w=800&q=80',
   },
   {
     num: '06',
+    title: 'Painting',
+    desc: 'Expert installation of luxury vinyl plank and tile flooring — durable, waterproof, and available in a wide variety of styles to complement any interior.',
+    img: 'https://images.unsplash.com/photo-1525909002-1b05e0c869d8?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+  },
+  {
+    num: '07',
+    title: 'Electrical',
+    desc: 'Licensed electrical services for residential and commercial projects — safe, code-compliant installations, repairs, and upgrades including lighting, outlets, panel work, and troubleshooting, all delivered with precision and reliability.',
+    img: 'https://plus.unsplash.com/premium_photo-1682086494759-b459f6eff2df?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTd8fEVsZWN0cmljaWFufGVufDB8fDB8fHww',
+  }, {
+    num: '08',
+    title: 'Cabinetry & Vanity',
+    desc: 'Cabinetry and vanity installation — precise, professional installation of pre-built cabinets and vanities, ensuring secure fit, proper alignment, and a clean, polished finish that enhances the functionality and look of your space.',
+    img: 'https://images.unsplash.com/photo-1627362726047-1bda6d2ca237?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  }, {
+    num: '09',
     title: 'Free Quote & Consulting',
-    desc: 'Not sure where to start? We offer complimentary consultations and detailed project quotes. Let our experts walk you through materials, timelines, and costs — no obligation.',
-    bg: 'sc-quote',
-    img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&q=80',
+    desc: 'Not sure where to start? We offer complimentary consultations and detailed project quotes. A skilled handyman is available to assist with repairs, installations, and general home improvement needs — no obligation.',
+    img: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?w=800&q=80',
   },
 ];
 
 export default function Services() {
   return (
-    <section id="services" className="services-section">
-      <div className="section-label">What We Do</div>
-      <h2 className="section-title">Crafted for <em>Every</em> Space</h2>
+    <section id="services" className="svc-section">
+      <div className="svc-label">What We Do</div>
+      <h2 className="svc-title">Crafted for <em>Every</em> Space</h2>
 
-      <div className="about-block">
-        <h3 className="about-heading">Our Company</h3>
-        <p className="about-text">
+      <div className="svc-about">
+        <h3 className="svc-about-heading">Our Company</h3>
+        <p className="svc-about-text">
           Established in 1997, S.M. Design Floors has built a distinguished reputation for
           delivering superior craftsmanship, dependable service, and refined design solutions.
           With more than 27 years of industry experience, we bring technical expertise,
           precision, and professionalism to every project we undertake.
         </p>
-        <p className="about-text" style={{ marginBottom: 0 }}>
+        <p className="svc-about-text svc-about-text--last">
           Our company was founded on the principles of integrity, quality workmanship, and
           personalized service. We understand that your home is one of your most valuable
           investments, and we approach each project with the care and attention it deserves.
         </p>
       </div>
 
-      <div className="services-grid">
+      <div className="svc-grid">
         {services.map((s) => (
-          <div className={`service-card ${s.bg}`} key={s.num}>
-            <div
-              className="service-card-bg"
-              style={{ backgroundImage: `url('${s.img}')` }}
-            />
-            <div className="service-card-overlay" />
-            <div className="service-card-content">
-              <div className="service-num">{s.num}</div>
-              <h3 className="service-title">{s.title}</h3>
-              <p className="service-desc">{s.desc}</p>
+          <div key={s.num} className="svc-card">
+            <img src={s.img} alt={s.title} className="svc-card-img" />
+            <div className="svc-card-overlay" />
+            <div className="svc-card-content">
+              <span className="svc-num">{s.num}</span>
+              <h3 className="svc-card-title">{s.title}</h3>
+              <p className="svc-card-desc">{s.desc}</p>
             </div>
           </div>
         ))}
