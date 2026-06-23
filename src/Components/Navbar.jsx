@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import './Navbar.css';
-import triangleLogo from '../assets/logo/new logo.png';
+import triangleLogo from '../assets/logo/new-logo.png';
 import { supabase } from '../lib/supabase';
 
 function ScheduleBanner() {
