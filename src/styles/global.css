@@ -97,3 +97,10 @@ section { padding: 120px 60px; }
   background: #fff;
   padding: 0.5rem 1rem;
 }
+
+main:focus {
+  outline: none;
+}
+main:focus-visible {
+  outline: none;
+}
