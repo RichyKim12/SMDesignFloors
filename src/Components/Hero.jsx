@@ -1,7 +1,7 @@
 import './Hero.css';
 import imgStorefront from '../assets/Hero/image4.jpg';
 import imgShowroom from '../assets/Hero/image5.JPG';
-import imgWork from '../assets/Hero/image1.JPG';
+import imgWork from '../assets/Hero/image1.jpg';
 
 export default function Hero() {
   return (
