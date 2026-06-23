@@ -85,3 +85,15 @@ section { padding: 120px 60px; }
   section { padding: 72px 24px; }
   .form-row { grid-template-columns: 1fr; }
 }
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 999;
+}
+.skip-link:focus {
+  left: 0;
+  background: #fff;
+  padding: 0.5rem 1rem;
+}

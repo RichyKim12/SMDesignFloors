@@ -27,7 +27,7 @@ function ScheduleBanner() {
   );
 }
 
-export default function Navbar({ onLoginClick }) {
+export default function Navbar({ onLoginClick, loginTriggerRef }) {
   const location     = useLocation();
   const navigate     = useNavigate();
   const isDashboard  = location.pathname === '/contractor' || location.pathname === '/admin';
@@ -67,7 +67,7 @@ export default function Navbar({ onLoginClick }) {
 
   return (
     <>
-      <nav>
+      <nav aria-label="Main navigation">
         {/* Logo — always visible, links home only when not on dashboard */}
         {isDashboard
           ? <div className="nav-logo" style={{ cursor: 'default' }}>
@@ -123,7 +123,11 @@ export default function Navbar({ onLoginClick }) {
             ? <></>
             : !role && (
               <li>
-                <button className="nav-login-btn" onClick={onLoginClick}>
+                <button
+                  className="nav-login-btn"
+                  ref={loginTriggerRef}
+                  onClick={onLoginClick}
+                >
                   Contractor Login
                 </button>
               </li>
