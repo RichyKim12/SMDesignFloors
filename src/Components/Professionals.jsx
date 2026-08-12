@@ -17,13 +17,10 @@ import {
 } from '../lib/formSecurity';
 
 // ─── Whitelisted static data ───────────────────────────────────
-// Defined here (not fetched) so the profession list cannot be
-// tampered with via a network response.
-
 const FEATURES = [
   { title: 'Referral Partnerships', desc: 'Earn referral fees when your clients choose our services.' },
-  { title: 'Trade Pricing',         desc: 'Access wholesale material pricing for your projects.' },
-  { title: 'Priority Scheduling',   desc: 'Your clients get priority booking and faster turnaround.' },
+  { title: 'Trade Pricing', desc: 'Access wholesale material pricing for your projects.' },
+  { title: 'Priority Scheduling', desc: 'Your clients get priority booking and faster turnaround.' },
 ];
 
 const PROFESSIONS = [
@@ -35,10 +32,10 @@ const PROFESSIONS = [
   'Other Trade',
 ];
 
-const DAYS  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TIMES = ['Morning', 'Afternoon'];
 
-// ─── Phone formatter (UI only — sanitizePhone runs on submit) ──
+// ─── Phone formatter (UI only) ─────────────────────────────────
 function formatPhone(val) {
   const digits = val.replace(/\D/g, '').slice(0, 10);
   if (digits.length < 4) return digits;
@@ -46,64 +43,70 @@ function formatPhone(val) {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
-// ─── Password strength (local — never sent anywhere) ───────────
+// ─── Password strength (local) ─────────────────────────────────
 function calcStrength(pw) {
   let score = 0;
-  if (pw.length >= 8)          score++;
-  if (pw.length >= 12)         score++;
-  if (/[A-Z]/.test(pw))        score++;
-  if (/[0-9]/.test(pw))        score++;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   return Math.min(score, 4);
 }
 const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
 const STRENGTH_COLORS = ['', '#c84a4a', '#c8953a', '#c8b43a', '#3a9c6b'];
 
+// Helper to convert File to Base64 for processing if needed
+const fileToBase64 = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = (error) => reject(error);
+  });
+
 // ─── Component ────────────────────────────────────────────────
 export default function Professionals() {
   const uid = useId();
-  const fid = (name) => `${uid}-${name}`; // stable, unique field IDs for ADA
+  const fid = (name) => `${uid}-${name}`;
 
   const [showVerification, setShowVerification] = useState(false);
-  const [showError, setShowError]               = useState(false);
-  const [errorMsg, setErrorMsg]                 = useState('');
-  const [fieldError, setFieldError]             = useState('');
-  const [loading, setLoading]                   = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [fieldError, setFieldError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const [selectedProfs, setSelectedProfs]       = useState([]);
-  const [availability, setAvailability]         = useState([]);
-  const [resumeFile, setResumeFile]             = useState(null);
-  const [certFile, setCertFile]                 = useState(null);
-  const [insuranceFile, setInsuranceFile]       = useState(null);
-  const [password, setPassword]                 = useState('');
-  const [confirmPassword, setConfirmPassword]   = useState('');
-  const [phone, setPhone]                       = useState('');
-  const [pwStrength, setPwStrength]             = useState(0);
+  const [selectedProfs, setSelectedProfs] = useState([]);
+  const [availability, setAvailability] = useState([]);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [certFile, setCertFile] = useState(null);
+  const [insuranceFile, setInsuranceFile] = useState(null);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [pwStrength, setPwStrength] = useState(0);
 
-  const fileInputRef     = useRef(null);
-  const certFileRef      = useRef(null);
+  const fileInputRef = useRef(null);
+  const certFileRef = useRef(null);
   const insuranceFileRef = useRef(null);
-  const errorRef         = useRef(null);
+  const errorRef = useRef(null);
 
   // ── Helpers ─────────────────────────────────────────────────
-
   function showErr(msg, field = '') {
     setErrorMsg(msg);
     setFieldError(field);
     setShowError(true);
     setLoading(false);
-    // Move focus to error banner so screen readers announce it immediately
     setTimeout(() => errorRef.current?.focus(), 50);
   }
 
   const toggleProf = (v) => {
-    // Only allow values from the known whitelist — ignores anything else
     if (!PROFESSIONS.includes(v)) return;
     setSelectedProfs(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v]);
   };
 
   const toggleSlot = (day, time) => {
-    if (!DAYS.includes(day) || !TIMES.includes(time)) return; // whitelist guard
+    if (!DAYS.includes(day) || !TIMES.includes(time)) return;
     const slot = `${day} ${time}`;
     setAvailability(prev => prev.includes(slot) ? prev.filter(x => x !== slot) : [...prev, slot]);
   };
@@ -111,20 +114,15 @@ export default function Professionals() {
   const isActive = (day, time) => availability.includes(`${day} ${time}`);
 
   // ── File handler ─────────────────────────────────────────────
-  // Two-stage: MIME type check first, then magic-byte verification.
-  // Both must pass before we accept the file.
-
   async function handleFileChange(setter, file, fileType) {
     if (!file) { setter(null); return; }
 
-    // Stage 1: MIME type + size
     const mimeCheck = validateFile(file, fileType);
     if (!mimeCheck.valid) {
       showErr(mimeCheck.message);
       return;
     }
 
-    // Stage 2: magic bytes — catches renamed executables / polyglots
     const magicOk = await verifyFileMagic(file);
     if (!magicOk) {
       showErr(
@@ -138,169 +136,93 @@ export default function Professionals() {
     setShowError(false);
   }
 
-  // ── Upload helper ─────────────────────────────────────────────
-  // sanitizeFileName prevents path traversal before building the
-  // storage path. The file is stored under a UUID-based prefix so
-  // even a crafted name can never escape the bucket folder.
-
-  async function uploadFile(submissionId, file, fileType) {
-    if (!file) return;
-    const safeName = sanitizeFileName(file.name);
-    const ext      = safeName.split('.').pop().replace(/[^a-z0-9]/gi, '').slice(0, 10);
-    const path     = `professional/${submissionId}/${fileType}-${Date.now()}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('submissions-files')
-      .upload(path, file);
-
-    if (uploadError) { console.error(`Upload error (${fileType}):`, uploadError); return; }
-
-    await supabase
-      .from('professional_submission_files')
-      .insert([{
-        submission_id: submissionId,
-        file_name:     safeName,          // sanitized before DB insert
-        file_path:     path,
-        file_type:     fileType,
-      }]);
-  }
-
-  // ── Submit ───────────────────────────────────────────────────
-
-  async function handleSubmit(e) {
+  // ── Submit Handler ───────────────────────────────────────────
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setShowError(false);
     setFieldError('');
 
-    // ── GATE 1: client-side rate limit ────────────────────────
-    // Blocks flooding before any network call is made.
-    const rate = checkRateLimit();
-    if (!rate.allowed) {
-      showErr(`Too many attempts. Please wait ${formatRetryTime(rate.retryAfterMs)} before trying again.`);
+    // Rate limiting check
+    const rateCheck = checkRateLimit('professional-registration');
+    if (!rateCheck.allowed) {
+      showErr(`Too many attempts. Please try again in ${formatRetryTime(rateCheck.retryAfterMs)}.`);
       return;
     }
 
-    setLoading(true);
-    const form = e.target;
+    // Extract form data from DOM
+    const formEl = e.currentTarget;
+    const rawData = new FormData(formEl);
 
-    // ── GATE 2: sanitize every field ─────────────────────────
-    // Strip XSS payloads, SQL injection chars, null bytes, and
-    // oversized content before any validation or network call.
-    const name        = sanitizeText(form.name.value,         { maxLength: 80   });
-    const email       = sanitizeEmail(form.email.value);
-    const business    = sanitizeText(form.business.value,     { maxLength: 120  });
-    const yearsExp    = sanitizeText(form.years_exp.value,    { maxLength: 120  });
-    const serviceArea = sanitizeText(form.service_area.value, { maxLength: 120  });
-    const website     = sanitizeUrl(form.website?.value  || '');
-    const notes       = sanitizeNotes(form.notes?.value  || '', { maxLength: 1000 });
-    const cleanPhone  = sanitizePhone(phone);
+    const rawEmail = sanitizeEmail(rawData.get('email') || '');
+    const rawName = sanitizeText(rawData.get('name') || '');
+    const rawBusiness = sanitizeText(rawData.get('business') || '');
+    const rawYearsExp = sanitizeText(rawData.get('years_exp') || '');
+    const rawServiceArea = sanitizeText(rawData.get('service_area') || '');
+    const rawWebsite = sanitizeUrl(rawData.get('website') || '');
+    const rawNotes = sanitizeNotes(rawData.get('notes') || '');
+    const cleanPhoneVal = sanitizePhone(phone);
 
-    // ── GATE 3: whitelist-based validation ────────────────────
-    // Validates sanitized values. Also whitelist-checks profession
-    // values so tampered checkbox values from DevTools are rejected.
-    const validation = validateForm({
-      name, email,
-      phone:           cleanPhone,
+    const formDataPayload = {
+      name: rawName,
+      email: rawEmail,
+      phone: cleanPhoneVal,
+      business: rawBusiness,
+      selectedProfs,
+      availability,
+      yearsExp: rawYearsExp,
+      serviceArea: rawServiceArea,
+      website: rawWebsite,
+      notes: rawNotes,
       password,
       confirmPassword,
-      selectedProfs,
-      website,
-    });
+    };
 
+    // Run client-side validation
+    const validation = validateForm(formDataPayload);
     if (!validation.valid) {
       showErr(validation.message, validation.field);
       return;
     }
 
-    // ── GATE 4: create auth account ───────────────────────────
-    // normalizeAuthError prevents email enumeration — the same
-    // generic message is shown whether the email is taken or the
-    // request fails for any other reason.
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: name } },
-    });
+    setLoading(true);
 
-    if (authError) {
-      showErr(normalizeAuthError(authError), 'email');
-      return;
+    try {
+      // 1. Register user via Supabase Auth (Triggers the confirmation email)
+      const { data, error } = await supabase.auth.signUp({
+        email: rawEmail,
+        password: password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            full_name: rawName,
+            business: rawBusiness,
+            phone: cleanPhoneVal,
+            professions: selectedProfs,
+            availability: availability,
+            years_exp: rawYearsExp,
+            service_area: rawServiceArea,
+            website: rawWebsite,
+            notes: rawNotes,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      setLoading(false);
+      setShowVerification(true);
+
+    } catch (err) {
+      console.error('Submission error:', err);
+      showErr(normalizeAuthError(err) || 'An error occurred during registration. Please try again.');
     }
-
-    const userId = authData?.user?.id;
-    if (!userId) {
-      // Same generic message — don't reveal why userId is missing
-      showErr('Unable to create account. Please check your details and try again.', 'email');
-      return;
-    }
-
-    // ── GATE 5: insert sanitized data only ────────────────────
-    // Every value going into Supabase has been sanitized above.
-    // The profession array only contains whitelisted strings.
-    // The availability array only contains "Day Time" strings
-    // built from whitelisted DAYS and TIMES constants.
-    const { data, error } = await supabase
-      .from('professional_submissions')
-      .insert([{
-        user_id:      userId,
-        name,
-        business:     business     || null,
-        email,
-        phone:        cleanPhone   || null,
-        professions:  selectedProfs,   // whitelist-validated
-        availability,                  // built from whitelist constants
-        years_exp:    yearsExp     || null,
-        service_area: serviceArea  || null,
-        website:      website      || null,
-        notes:        notes        || null,
-      }])
-      .select()
-      .single();
-
-    if (error) {
-      // Don't expose raw DB error messages to the UI
-      console.error('Submission error:', error.message);
-      showErr('Something went wrong saving your application. Please try again.');
-      return;
-    }
-
-    // ── File uploads (sanitized paths, magic-verified content) ─
-    await Promise.all([
-      uploadFile(data.id, resumeFile,    'resume'),
-      uploadFile(data.id, certFile,      'certificate'),
-      uploadFile(data.id, insuranceFile, 'insurance'),
-    ]);
-
-    // ── Profile upsert ────────────────────────────────────────
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert({ id: userId, role: 'contractor', full_name: name, email });
-
-    if (profileError) console.error('Profile upsert error:', profileError);
-
-    await supabase.auth.refreshSession();   
-
-    // ── Reset ─────────────────────────────────────────────────
-    setLoading(false);
-    setShowVerification(true);
-    setSelectedProfs([]);
-    setAvailability([]);
-    setResumeFile(null);
-    setCertFile(null);
-    setInsuranceFile(null);
-    setPassword('');
-    setConfirmPassword('');
-    setPhone('');
-    setPwStrength(0);
-    form.reset();
-  }
+  };
 
   // ── Render ────────────────────────────────────────────────────
-
   return (
     <section id="professionals" aria-label="Contractor registration">
 
-      {/* Success modal */}
+      {/* Verification modal */}
       {showVerification && (
         <div
           className="modal-overlay visible"
@@ -315,13 +237,13 @@ export default function Professionals() {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <h3 id="modal-title" className="verification-title">Application Submitted</h3>
+            <h3 id="modal-title" className="verification-title">Verify Your Email</h3>
             <p className="verification-body">
-              Your contractor account has been created and your application submitted.
-              Our team will review your profile and be in touch soon.
+              Your contractor account registration was initiated! We sent a confirmation link to your email address.
+              Please check your inbox and confirm your email to finalize registration.
             </p>
             <p className="verification-sub">
-              You can sign in using the button at the top of the page.
+              Once verified, your profile will be sent to our team for final review.
             </p>
             <button className="verification-btn" onClick={() => setShowVerification(false)} autoFocus>
               Got it
@@ -373,7 +295,7 @@ export default function Professionals() {
             </p>
           </div>
 
-          {/* Error banner — role=alert makes screen readers announce it immediately */}
+          {/* Error banner */}
           {showError && (
             <div
               ref={errorRef}
@@ -383,7 +305,7 @@ export default function Professionals() {
               tabIndex={-1}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               {errorMsg}
             </div>
@@ -477,7 +399,7 @@ export default function Professionals() {
               </div>
             </fieldset>
 
-            {/* Profession — whitelist-validated on submit */}
+            {/* Profession */}
             <fieldset className="form-fieldset">
               <legend className="form-legend">
                 Profession <span aria-hidden="true">*</span>
@@ -552,7 +474,7 @@ export default function Professionals() {
               </div>
             </fieldset>
 
-            {/* Availability — built from whitelisted constants, never from user input */}
+            {/* Availability */}
             <fieldset className="form-fieldset">
               <legend className="form-legend">
                 Availability to be contacted
@@ -590,14 +512,14 @@ export default function Professionals() {
               </div>
             </fieldset>
 
-            {/* Documents — magic-byte verified before state is set */}
+            {/* Documents */}
             <fieldset className="form-fieldset">
               <legend className="form-legend">Documents <span className="form-legend-hint">(optional)</span></legend>
               <div className="upload-grid">
                 {[
-                  { label: 'Resume / Portfolio',     ref: fileInputRef,     state: resumeFile,    setter: setResumeFile,    type: 'resume',      accept: '.pdf,.doc,.docx', hint: 'PDF, DOC, DOCX — max 10 MB' },
-                  { label: 'Certificates / License', ref: certFileRef,      state: certFile,      setter: setCertFile,      type: 'certificate', accept: '.pdf,.jpg,.jpeg', hint: 'PDF, JPG — max 10 MB' },
-                  { label: 'Current Insurance',      ref: insuranceFileRef, state: insuranceFile, setter: setInsuranceFile, type: 'insurance',   accept: '.pdf,.jpg,.jpeg', hint: 'PDF, JPG — max 10 MB' },
+                  { label: 'Resume / Portfolio', ref: fileInputRef, state: resumeFile, setter: setResumeFile, type: 'resume', accept: '.pdf,.doc,.docx', hint: 'PDF, DOC, DOCX — max 10 MB' },
+                  { label: 'Certificates / License', ref: certFileRef, state: certFile, setter: setCertFile, type: 'certificate', accept: '.pdf,.jpg,.jpeg', hint: 'PDF, JPG — max 10 MB' },
+                  { label: 'Current Insurance', ref: insuranceFileRef, state: insuranceFile, setter: setInsuranceFile, type: 'insurance', accept: '.pdf,.jpg,.jpeg', hint: 'PDF, JPG — max 10 MB' },
                 ].map(({ label, ref, state, setter, type, accept, hint }) => {
                   const btnId = fid(`upload-${type}`);
                   return (
@@ -644,6 +566,7 @@ export default function Professionals() {
                   </label>
                   <input
                     id={fid('password')}
+                    name="password"
                     type="password"
                     placeholder="Min 8 characters"
                     value={password}
@@ -691,6 +614,7 @@ export default function Professionals() {
                   </label>
                   <input
                     id={fid('confirm-password')}
+                    name="confirmPassword"
                     type="password"
                     placeholder="Re-enter password"
                     value={confirmPassword}

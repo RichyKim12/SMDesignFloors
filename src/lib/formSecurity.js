@@ -309,6 +309,7 @@ export async function verifyFileMagic(file) {
 export function normalizeAuthError(authError) {
   if (!authError) return null;
   const msg = authError.message?.toLowerCase() ?? '';
+  console.log(msg);
 
   // Enumeration risk: "user already exists" / "email already registered"
   if (
