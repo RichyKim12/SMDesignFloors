@@ -12,15 +12,18 @@ import Footer from './Components/Footer';
 import Navbar from './Components/Navbar';
 import FlooringVisualizer from './Components/FlooringVisualizer';
 
-// Auth
+// Modals
 import AuthModal from './Components/AuthModal';
+import PrivacyModal from './Components/PrivacyModal';
+
+// Auth
 import ProtectedRoute from './Components/ProtectedRoute';
 import RoleRoute from './Components/RoleRoute';
 
 // Dashboards
 import ContractorDashboard from './pages/ContractorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import NotFound from './pages/NotFound'
+import NotFound from './pages/NotFound';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -55,10 +58,12 @@ const DASHBOARD_ROUTES = ['/contractor', '/admin'];
 
 function Layout() {
   const [modalOpen, setModalOpen] = useState(false);
-  const location                  = useLocation();
-  const isDashboard               = DASHBOARD_ROUTES.includes(location.pathname);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
 
-  const mainRef         = useRef(null);
+  const location = useLocation();
+  const isDashboard = DASHBOARD_ROUTES.includes(location.pathname);
+
+  const mainRef = useRef(null);
   const loginTriggerRef = useRef(null); // the "Contractor Login" button in Navbar
 
   const closeModal = () => {
@@ -84,12 +89,17 @@ function Layout() {
         onClose={closeModal}
       />
 
+      <PrivacyModal
+        isOpen={privacyOpen}
+        onClose={() => setPrivacyOpen(false)}
+      />
+
       <main id="main-content" ref={mainRef} tabIndex={-1}>
         <Routes>
           {/* Public routes */}
-          <Route path="/"            element={<HomePage />} />
-          <Route path="/proservices" element={<Professionals />} />
-          <Route path="/visualizer"  element={<FlooringVisualizer />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/proservices" element={<Professionals onOpenPrivacy={() => setPrivacyOpen(true)} />} />
+          <Route path="/visualizer" element={<FlooringVisualizer />} />
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
@@ -107,7 +117,7 @@ function Layout() {
       </main>
 
       {/* Hide footer on dashboard pages */}
-      {!isDashboard && <Footer />}
+      {!isDashboard && <Footer onOpenPrivacy={() => setPrivacyOpen(true)} />}
     </>
   );
 }
@@ -118,4 +128,4 @@ export default function App() {
       <Layout />
     </BrowserRouter>
   );
-}
+}    

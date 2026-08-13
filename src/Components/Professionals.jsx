@@ -7,7 +7,6 @@ import {
   sanitizePhone,
   sanitizeUrl,
   sanitizeNotes,
-  sanitizeFileName,
   validateForm,
   validateFile,
   verifyFileMagic,
@@ -56,25 +55,19 @@ function calcStrength(pw) {
 const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
 const STRENGTH_COLORS = ['', '#c84a4a', '#c8953a', '#c8b43a', '#3a9c6b'];
 
-// Helper to convert File to Base64 for processing if needed
-const fileToBase64 = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = (error) => reject(error);
-  });
-
 // ─── Component ────────────────────────────────────────────────
 export default function Professionals() {
   const uid = useId();
   const fid = (name) => `${uid}-${name}`;
 
-  const [showVerification, setShowVerification] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [fieldError, setFieldError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Separate Modal States
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const [selectedProfs, setSelectedProfs] = useState([]);
   const [availability, setAvailability] = useState([]);
@@ -113,6 +106,16 @@ export default function Professionals() {
 
   const isActive = (day, time) => availability.includes(`${day} ${time}`);
 
+  const handleOpenPrivacy = (e) => {
+    e.preventDefault();
+    setShowPrivacyModal(true);
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    window.location.href = '/dashboard';
+  };
+
   // ── File handler ─────────────────────────────────────────────
   async function handleFileChange(setter, file, fileType) {
     if (!file) { setter(null); return; }
@@ -142,14 +145,12 @@ export default function Professionals() {
     setShowError(false);
     setFieldError('');
 
-    // Rate limiting check
     const rateCheck = checkRateLimit('professional-registration');
     if (!rateCheck.allowed) {
       showErr(`Too many attempts. Please try again in ${formatRetryTime(rateCheck.retryAfterMs)}.`);
       return;
     }
 
-    // Extract form data from DOM
     const formEl = e.currentTarget;
     const rawData = new FormData(formEl);
 
@@ -177,7 +178,6 @@ export default function Professionals() {
       confirmPassword,
     };
 
-    // Run client-side validation
     const validation = validateForm(formDataPayload);
     if (!validation.valid) {
       showErr(validation.message, validation.field);
@@ -187,12 +187,10 @@ export default function Professionals() {
     setLoading(true);
 
     try {
-      // 1. Register user via Supabase Auth (Triggers the confirmation email)
       const { data, error } = await supabase.auth.signUp({
         email: rawEmail,
         password: password,
         options: {
-          emailRedirectTo: window.location.origin,
           data: {
             full_name: rawName,
             business: rawBusiness,
@@ -209,8 +207,17 @@ export default function Professionals() {
 
       if (error) throw error;
 
+      if (!data.session) {
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: rawEmail,
+          password: password,
+        });
+        if (signInErr) throw signInErr;
+      }
+
       setLoading(false);
-      setShowVerification(true);
+      // Trigger submission confirmation modal
+      setShowSuccessModal(true);
 
     } catch (err) {
       console.error('Submission error:', err);
@@ -221,36 +228,6 @@ export default function Professionals() {
   // ── Render ────────────────────────────────────────────────────
   return (
     <section id="professionals" aria-label="Contractor registration">
-
-      {/* Verification modal */}
-      {showVerification && (
-        <div
-          className="modal-overlay visible"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-title"
-          onClick={() => setShowVerification(false)}
-        >
-          <div className="verification-modal" onClick={e => e.stopPropagation()}>
-            <div className="verification-icon" aria-hidden="true">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <h3 id="modal-title" className="verification-title">Verify Your Email</h3>
-            <p className="verification-body">
-              Your contractor account registration was initiated! We sent a confirmation link to your email address.
-              Please check your inbox and confirm your email to finalize registration.
-            </p>
-            <p className="verification-sub">
-              Once verified, your profile will be sent to our team for final review.
-            </p>
-            <button className="verification-btn" onClick={() => setShowVerification(false)} autoFocus>
-              Got it
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Left: info panel */}
       <div className="sticky-info" aria-label="About ProServices">
@@ -291,7 +268,14 @@ export default function Professionals() {
               Completing this form creates an <strong>SM Design Floors contractor account</strong> linked
               to your email. Your information is stored securely and used only to match you with
               relevant projects. You may request deletion at any time.{' '}
-              <a href="/privacy" className="form-legal-link">Privacy Policy</a>.
+              <button 
+                type="button" 
+                onClick={handleOpenPrivacy} 
+                className="form-legal-link"
+                style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}
+              >
+                Privacy Policy
+              </button>.
             </p>
           </div>
 
@@ -658,11 +642,206 @@ export default function Professionals() {
               By submitting you agree to create an SM Design Floors contractor account and consent
               to us storing your information solely for the purpose of matching you with relevant
               projects. We will never sell your data.{' '}
-              <a href="/privacy" className="form-legal-link">Privacy Policy</a>.
+              <button 
+                type="button" 
+                onClick={handleOpenPrivacy} 
+                className="form-legal-link"
+                style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}
+              >
+                Privacy Policy
+              </button>.
             </p>
           </form>
         </div>
       </div>
+
+      {/* ─── 1. Submission Success Modal ────────────────────────────── */}
+      {showSuccessModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+            backdropFilter: 'blur(4px)'
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="success-modal-title"
+        >
+          <div 
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: '12px',
+              maxWidth: '480px',
+              width: '100%',
+              padding: '32px 28px',
+              textAlign: 'center',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            }}
+          >
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              backgroundColor: '#e6f4ea',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px auto'
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+
+            <h3 id="success-modal-title" style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '12px', fontWeight: 600 }}>
+              Welcome to the Network!
+            </h3>
+            
+            <p style={{ color: '#666', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '24px' }}>
+              Your contractor account has been successfully created and your application details have been submitted. You are now logged in.
+            </p>
+
+            <button
+              onClick={handleSuccessModalClose}
+              style={{
+                width: '100%',
+                padding: '12px 20px',
+                backgroundColor: 'var(--tan-dark, #2a2a2a)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease'
+              }}
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── 2. Privacy Policy Modal ────────────────────────────── */}
+      {showPrivacyModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+            backdropFilter: 'blur(4px)'
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="privacy-modal-title"
+          onClick={() => setShowPrivacyModal(false)}
+        >
+          <div 
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: '12px',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '85vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              overflow: 'hidden'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid #eee',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <h3 id="privacy-modal-title" style={{ fontSize: '1.25rem', color: '#1a1a1a', margin: 0, fontWeight: 600 }}>
+                Privacy Policy
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                aria-label="Close privacy policy"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  color: '#666'
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div style={{
+              padding: '24px',
+              overflowY: 'auto',
+              color: '#4a4a4a',
+              fontSize: '0.9rem',
+              lineHeight: 1.6
+            }}>
+              <h4 style={{ color: '#1a1a1a', marginTop: 0 }}>Information We Collect</h4>
+              <p>
+                When you register for our contractor network, we collect personal and business information such as your name, email address, phone number, company details, trade specialties, service areas, and optional uploaded documents (resumes, certifications, and insurance records).
+              </p>
+
+              <h4 style={{ color: '#1a1a1a' }}>How We Use Your Data</h4>
+              <p>
+                Your information is stored securely and used solely to verify your qualifications, contact you regarding potential project opportunities, and manage your contractor account. We do not sell, rent, or lease your personal information to third parties.
+              </p>
+
+              <h4 style={{ color: '#1a1a1a' }}>Data Retention &amp; Your Rights</h4>
+              <p>
+                Your profile remains active while you are part of our trade network. You reserve the right to review, update, or request complete deletion of your account and associated documents at any time by contacting our support team.
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: '16px 24px',
+              borderTop: '1px solid #eee',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              backgroundColor: '#fafafa'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: 'var(--tan-dark, #2a2a2a)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }

@@ -28,7 +28,6 @@ const BRANDS = [
   { src: daltile,         name: 'Daltile' },
   { src: shaw,            name: 'Shaw Floors' },
 ];
-// Please verify these brand names match the actual logos/spellings.
 
 function BrandCarousel() {
   const trackRef    = useRef(null);
@@ -86,6 +85,8 @@ function BrandCarousel() {
 
   useEffect(() => {
     const track = trackRef.current;
+    if (!track) return;
+
     const onMouseDown  = (e) => { startDrag(e.clientX); e.preventDefault(); };
     const onMouseMove  = (e) => moveDrag(e.clientX);
     const onTouchStart = (e) => startDrag(e.touches[0].clientX);
@@ -106,7 +107,7 @@ function BrandCarousel() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', stopDrag);
     };
-  }, []);
+  }, [isPaused]);
 
   const allBrands = [...BRANDS, ...BRANDS];
 
@@ -147,13 +148,22 @@ function BrandCarousel() {
   );
 }
 
-export default function Footer() {
+export default function Footer({ onOpenPrivacy }) {
   return (
     <>
       <BrandCarousel />
       <footer>
         <div className="footer-logo">SM <span>Design</span> Floors</div>
-        <p>© 2026 SM Design Floors. All rights reserved.</p>
+        <div className="footer-legal">
+          <p>© 2026 SM Design Floors. All rights reserved.</p>
+          <button
+            type="button"
+            className="footer-privacy-btn"
+            onClick={onOpenPrivacy}
+          >
+            Privacy Policy
+          </button>
+        </div>
       </footer>
     </>
   );
