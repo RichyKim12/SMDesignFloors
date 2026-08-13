@@ -52,8 +52,28 @@ function calcStrength(pw) {
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   return Math.min(score, 4);
 }
+
 const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
 const STRENGTH_COLORS = ['', '#c84a4a', '#c8953a', '#c8b43a', '#3a9c6b'];
+
+// ─── Storage Upload Helper ────────────────────────────────────
+async function uploadDocument(file, type, userEmail) {
+  if (!file) return null;
+  const cleanEmail = userEmail.replace(/[^a-zA-Z0-9]/g, '_');
+  const fileExt = file.name.split('.').pop();
+  const filePath = `${cleanEmail}/${type}_${Date.now()}.${fileExt}`;
+
+  const { data, error } = await supabase.storage
+    .from('contractor-documents')
+    .upload(filePath, file);
+
+  if (error) {
+    console.error(`Error uploading ${type}:`, error);
+    throw new Error(`Failed to upload ${type} document.`);
+  }
+
+  return data.path;
+}
 
 // ─── Component ────────────────────────────────────────────────
 export default function Professionals() {
@@ -95,13 +115,13 @@ export default function Professionals() {
 
   const toggleProf = (v) => {
     if (!PROFESSIONS.includes(v)) return;
-    setSelectedProfs(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v]);
+    setSelectedProfs((p) => (p.includes(v) ? p.filter((x) => x !== v) : [...p, v]));
   };
 
   const toggleSlot = (day, time) => {
     if (!DAYS.includes(day) || !TIMES.includes(time)) return;
     const slot = `${day} ${time}`;
-    setAvailability(prev => prev.includes(slot) ? prev.filter(x => x !== slot) : [...prev, slot]);
+    setAvailability((prev) => (prev.includes(slot) ? prev.filter((x) => x !== slot) : [...prev, slot]));
   };
 
   const isActive = (day, time) => availability.includes(`${day} ${time}`);
@@ -113,12 +133,15 @@ export default function Professionals() {
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    window.location.href = '/dashboard';
+    window.location.href = '/contractor';
   };
 
   // ── File handler ─────────────────────────────────────────────
   async function handleFileChange(setter, file, fileType) {
-    if (!file) { setter(null); return; }
+    if (!file) {
+      setter(null);
+      return;
+    }
 
     const mimeCheck = validateFile(file, fileType);
     if (!mimeCheck.valid) {
@@ -140,6 +163,7 @@ export default function Professionals() {
   }
 
   // ── Submit Handler ───────────────────────────────────────────
+  // ── Submit Handler ───────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setShowError(false);
@@ -148,7 +172,7 @@ export default function Professionals() {
     const rateCheck = checkRateLimit('professional-registration');
     if (!rateCheck.allowed) {
       showErr(`Too many attempts. Please try again in ${formatRetryTime(rateCheck.retryAfterMs)}.`);
-      return;
+      // return;
     }
 
     const formEl = e.currentTarget;
@@ -187,6 +211,15 @@ export default function Professionals() {
     setLoading(true);
 
     try {
+      // 1. Upload documents conditionally
+      const [resumePath, certPath, insurancePath] = await Promise.all([
+        resumeFile ? uploadDocument(resumeFile, 'resume', rawEmail) : Promise.resolve(null),
+        certFile ? uploadDocument(certFile, 'certificate', rawEmail) : Promise.resolve(null),
+        insuranceFile ? uploadDocument(insuranceFile, 'insurance', rawEmail) : Promise.resolve(null),
+      ]);
+
+      // 2. Sign up user with metadata & file paths
+      // Note: JSON.stringify is used on array fields so Postgres maps them cleanly to JSONB
       const { data, error } = await supabase.auth.signUp({
         email: rawEmail,
         password: password,
@@ -201,6 +234,9 @@ export default function Professionals() {
             service_area: rawServiceArea,
             website: rawWebsite,
             notes: rawNotes,
+            resume_path: resumePath,
+            cert_path: certPath,
+            insurance_path: insurancePath,
           },
         },
       });
@@ -216,9 +252,7 @@ export default function Professionals() {
       }
 
       setLoading(false);
-      // Trigger submission confirmation modal
       setShowSuccessModal(true);
-
     } catch (err) {
       console.error('Submission error:', err);
       showErr(normalizeAuthError(err) || 'An error occurred during registration. Please try again.');
@@ -228,7 +262,6 @@ export default function Professionals() {
   // ── Render ────────────────────────────────────────────────────
   return (
     <section id="professionals" aria-label="Contractor registration">
-
       {/* Left: info panel */}
       <div className="sticky-info" aria-label="About ProServices">
         <div className="section-label">Trade Network</div>
@@ -249,7 +282,7 @@ export default function Professionals() {
           our team can quickly reach out when projects matching your skills become available.
         </p>
         <div className="feature-list">
-          {FEATURES.map(f => (
+          {FEATURES.map((f) => (
             <div key={f.title} className="feature-item">
               <h4>{f.title}</h4>
               <p>{f.desc}</p>
@@ -268,9 +301,9 @@ export default function Professionals() {
               Completing this form creates an <strong>SM Design Floors contractor account</strong> linked
               to your email. Your information is stored securely and used only to match you with
               relevant projects. You may request deletion at any time.{' '}
-              <button 
-                type="button" 
-                onClick={handleOpenPrivacy} 
+              <button
+                type="button"
+                onClick={handleOpenPrivacy}
                 className="form-legal-link"
                 style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}
               >
@@ -296,7 +329,6 @@ export default function Professionals() {
           )}
 
           <form onSubmit={handleSubmit} noValidate aria-label="Contractor registration form">
-
             {/* Personal info */}
             <fieldset className="form-fieldset">
               <legend className="form-legend">Personal Information</legend>
@@ -373,7 +405,7 @@ export default function Professionals() {
                     maxLength={14}
                     aria-invalid={fieldError === 'phone' ? 'true' : undefined}
                     aria-describedby={`${fid('phone-hint')}${fieldError === 'phone' ? ` ${fid('phone-err')}` : ''}`}
-                    onChange={e => setPhone(formatPhone(e.target.value))}
+                    onChange={(e) => setPhone(formatPhone(e.target.value))}
                   />
                   <span id={fid('phone-hint')} className="field-hint">Format: (555) 000-0000</span>
                   {fieldError === 'phone' && (
@@ -396,7 +428,7 @@ export default function Professionals() {
                 aria-required="true"
                 aria-invalid={fieldError === 'profession' ? 'true' : undefined}
               >
-                {PROFESSIONS.map(prof => (
+                {PROFESSIONS.map((prof) => (
                   <label key={prof} className="checkbox-item">
                     <input
                       type="checkbox"
@@ -469,14 +501,14 @@ export default function Professionals() {
                   <thead>
                     <tr>
                       <th scope="col"><span className="sr-only">Time of day</span></th>
-                      {DAYS.map(day => <th key={day} scope="col">{day}</th>)}
+                      {DAYS.map((day) => <th key={day} scope="col">{day}</th>)}
                     </tr>
                   </thead>
                   <tbody>
-                    {TIMES.map(time => (
+                    {TIMES.map((time) => (
                       <tr key={time}>
                         <th scope="row" className="time-label">{time}</th>
-                        {DAYS.map(day => (
+                        {DAYS.map((day) => (
                           <td key={day}>
                             <button
                               type="button"
@@ -516,7 +548,7 @@ export default function Professionals() {
                         aria-labelledby={btnId}
                         aria-describedby={`${btnId}-hint`}
                         onClick={() => ref.current.click()}
-                        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && ref.current.click()}
+                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ref.current.click()}
                       >
                         <input
                           ref={ref}
@@ -525,12 +557,13 @@ export default function Professionals() {
                           style={{ display: 'none' }}
                           aria-hidden="true"
                           tabIndex={-1}
-                          onChange={e => handleFileChange(setter, e.target.files[0] || null, type)}
+                          onChange={(e) => handleFileChange(setter, e.target.files[0] || null, type)}
                         />
-                        {state
-                          ? <div className="upload-filename">{state.name}</div>
-                          : <div className="upload-hint">Click or press Enter to upload</div>
-                        }
+                        {state ? (
+                          <div className="upload-filename">{state.name}</div>
+                        ) : (
+                          <div className="upload-hint">Click or press Enter to upload</div>
+                        )}
                         <div id={`${btnId}-hint`} className="upload-meta">{hint}</div>
                       </div>
                     </div>
@@ -560,7 +593,7 @@ export default function Professionals() {
                     aria-required="true"
                     aria-invalid={fieldError === 'password' ? 'true' : undefined}
                     aria-describedby={`${fid('pw-hint')}${fieldError === 'password' ? ` ${fid('pw-err')}` : ''}`}
-                    onChange={e => {
+                    onChange={(e) => {
                       setPassword(e.target.value);
                       setPwStrength(calcStrength(e.target.value));
                     }}
@@ -572,7 +605,7 @@ export default function Professionals() {
                   {password.length > 0 && (
                     <div className="pw-strength" aria-live="polite" aria-atomic="true">
                       <div className="pw-strength-bar">
-                        {[1, 2, 3, 4].map(n => (
+                        {[1, 2, 3, 4].map((n) => (
                           <div
                             key={n}
                             className="pw-strength-segment"
@@ -606,7 +639,7 @@ export default function Professionals() {
                     required
                     aria-required="true"
                     aria-invalid={fieldError === 'confirmPassword' ? 'true' : undefined}
-                    onChange={e => setConfirmPassword(e.target.value)}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                   />
                   {fieldError === 'confirmPassword' && (
                     <span className="field-error" role="alert">{errorMsg}</span>
@@ -642,9 +675,9 @@ export default function Professionals() {
               By submitting you agree to create an SM Design Floors contractor account and consent
               to us storing your information solely for the purpose of matching you with relevant
               projects. We will never sell your data.{' '}
-              <button 
-                type="button" 
-                onClick={handleOpenPrivacy} 
+              <button
+                type="button"
+                onClick={handleOpenPrivacy}
                 className="form-legal-link"
                 style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}
               >
@@ -657,7 +690,7 @@ export default function Professionals() {
 
       {/* ─── 1. Submission Success Modal ────────────────────────────── */}
       {showSuccessModal && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             inset: 0,
@@ -667,13 +700,13 @@ export default function Professionals() {
             justifyContent: 'center',
             zIndex: 9999,
             padding: '20px',
-            backdropFilter: 'blur(4px)'
+            backdropFilter: 'blur(4px)',
           }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="success-modal-title"
         >
-          <div 
+          <div
             style={{
               backgroundColor: '#fff',
               borderRadius: '12px',
@@ -681,19 +714,21 @@ export default function Professionals() {
               width: '100%',
               padding: '32px 28px',
               textAlign: 'center',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
             }}
           >
-            <div style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              backgroundColor: '#e6f4ea',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 20px auto'
-            }}>
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: '#e6f4ea',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px auto',
+              }}
+            >
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
@@ -702,7 +737,7 @@ export default function Professionals() {
             <h3 id="success-modal-title" style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '12px', fontWeight: 600 }}>
               Welcome to the Network!
             </h3>
-            
+
             <p style={{ color: '#666', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '24px' }}>
               Your contractor account has been successfully created and your application details have been submitted. You are now logged in.
             </p>
@@ -719,7 +754,7 @@ export default function Professionals() {
                 fontSize: '1rem',
                 fontWeight: 500,
                 cursor: 'pointer',
-                transition: 'background-color 0.2s ease'
+                transition: 'background-color 0.2s ease',
               }}
             >
               Go to Dashboard
@@ -730,7 +765,7 @@ export default function Professionals() {
 
       {/* ─── 2. Privacy Policy Modal ────────────────────────────── */}
       {showPrivacyModal && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             inset: 0,
@@ -740,14 +775,14 @@ export default function Professionals() {
             justifyContent: 'center',
             zIndex: 9999,
             padding: '20px',
-            backdropFilter: 'blur(4px)'
+            backdropFilter: 'blur(4px)',
           }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="privacy-modal-title"
           onClick={() => setShowPrivacyModal(false)}
         >
-          <div 
+          <div
             style={{
               backgroundColor: '#fff',
               borderRadius: '12px',
@@ -757,18 +792,20 @@ export default function Professionals() {
               display: 'flex',
               flexDirection: 'column',
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-              overflow: 'hidden'
+              overflow: 'hidden',
             }}
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div style={{
-              padding: '20px 24px',
-              borderBottom: '1px solid #eee',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
+            <div
+              style={{
+                padding: '20px 24px',
+                borderBottom: '1px solid #eee',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <h3 id="privacy-modal-title" style={{ fontSize: '1.25rem', color: '#1a1a1a', margin: 0, fontWeight: 600 }}>
                 Privacy Policy
               </h3>
@@ -782,7 +819,7 @@ export default function Professionals() {
                   fontSize: '1.5rem',
                   lineHeight: 1,
                   cursor: 'pointer',
-                  color: '#666'
+                  color: '#666',
                 }}
               >
                 &times;
@@ -790,58 +827,17 @@ export default function Professionals() {
             </div>
 
             {/* Scrollable Body */}
-            <div style={{
-              padding: '24px',
-              overflowY: 'auto',
-              color: '#4a4a4a',
-              fontSize: '0.9rem',
-              lineHeight: 1.6
-            }}>
-              <h4 style={{ color: '#1a1a1a', marginTop: 0 }}>Information We Collect</h4>
-              <p>
-                When you register for our contractor network, we collect personal and business information such as your name, email address, phone number, company details, trade specialties, service areas, and optional uploaded documents (resumes, certifications, and insurance records).
+            <div style={{ padding: '24px', overflowY: 'auto', fontSize: '0.9rem', lineHeight: 1.6, color: '#444' }}>
+              <p style={{ marginTop: 0 }}>
+                Your privacy is important to us. Information collected through this registration form is used strictly to establish contractor partnerships, verify project availability, and communicate relevant trade opportunities.
               </p>
-
-              <h4 style={{ color: '#1a1a1a' }}>How We Use Your Data</h4>
               <p>
-                Your information is stored securely and used solely to verify your qualifications, contact you regarding potential project opportunities, and manage your contractor account. We do not sell, rent, or lease your personal information to third parties.
+                We store your application details securely and do not share or sell your data to third parties. You may request account deletion or data removal at any time by contacting our team.
               </p>
-
-              <h4 style={{ color: '#1a1a1a' }}>Data Retention &amp; Your Rights</h4>
-              <p>
-                Your profile remains active while you are part of our trade network. You reserve the right to review, update, or request complete deletion of your account and associated documents at any time by contacting our support team.
-              </p>
-            </div>
-
-            {/* Modal Footer */}
-            <div style={{
-              padding: '16px 24px',
-              borderTop: '1px solid #eee',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              backgroundColor: '#fafafa'
-            }}>
-              <button
-                type="button"
-                onClick={() => setShowPrivacyModal(false)}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: 'var(--tan-dark, #2a2a2a)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '0.9rem',
-                  fontWeight: 500,
-                  cursor: 'pointer'
-                }}
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
       )}
-
     </section>
   );
 }
