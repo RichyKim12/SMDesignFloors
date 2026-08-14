@@ -1,7 +1,7 @@
 import './Hero.css';
-import imgStorefront from '../assets/kitchen/9.jpg';
+import imgStorefront from '../assets/flooring/9.jpg';
 import imgShowroom from '../assets/Hero/image5.JPG';
-import imgWork from '../assets/12.jpg';
+import imgWork from '../assets/bathroom/12.jpg';
 
 export default function Hero() {
   return (
@@ -13,7 +13,7 @@ export default function Hero() {
         </h1>
         <p className="hero-sub">
           We craft enduring spaces through expert flooring installation, bathroom
-          transformations, and kitchen remodeling—each project a testament to quality craftsmanship.
+          transformations, and kitchen remodeling - each project a testament to quality craftsmanship.
         </p>
         <div className="btn-row">
           <a href="#contact" className="btn-primary" style={{ padding: '22px 80px' }}>

@@ -1,3 +1,21 @@
+/* GLOBAL PLACEHOLDERS (Fixes low-contrast placeholders across all inputs/textareas) */
+::placeholder {
+  color: #666;
+  opacity: 1;
+}
+::-webkit-input-placeholder {
+  color: #666;
+  opacity: 1;
+}
+::-moz-placeholder {
+  color: #666;
+  opacity: 1;
+}
+:-ms-input-placeholder {
+  color: #666;
+  opacity: 1;
+}
+
 #contact {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
@@ -44,14 +62,17 @@
 .form-group label {
   font-size: 0.85rem;
   margin-bottom: 6px;
+  color: #222; /* High contrast for labels */
+  font-weight: 500;
 }
 .form-group input,
 .form-group select,
 .form-group textarea {
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 0.9rem;
+  color: #111; /* Ensure typed text is high contrast */
 }
 .form-group input:focus-visible,
 .form-group select:focus-visible,
@@ -74,15 +95,13 @@ textarea {
   font-weight: 500;
   margin-bottom: 10px;
   padding: 0;
+  color: #222;
 }
-.form-legend-hint {
+.form-legend-hint,
+.field-hint {
   font-size: 0.8rem;
   font-weight: 400;
-  color: #6b6b6b;
-}
-.field-hint {
-  font-size: 0.75rem;
-  color: #6b6b6b;
+  color: #555; /* Darkened for accessibility */
   margin-top: 4px;
 }
 
@@ -129,8 +148,8 @@ textarea {
 }
 .availability-table th {
   font-size: 0.78rem;
-  font-weight: 500;
-  color: #666; /* was #888 — failed AA at 3.54:1, now 5.40:1 */
+  font-weight: 600;
+  color: #444; /* High contrast */
   text-align: center;
   padding: 0 4px 10px;
 }
@@ -144,8 +163,8 @@ textarea {
 }
 .time-label {
   font-size: 0.78rem;
-  font-weight: 500;
-  color: #666; /* was #888 — failed AA at 3.33:1, now 5.40:1 */
+  font-weight: 600;
+  color: #444; /* High contrast */
   text-align: left !important;
   padding-left: 0 !important;
   white-space: nowrap;
@@ -158,10 +177,11 @@ textarea {
   padding: 6px 0;
   font-size: 0.75rem;
   font-family: inherit;
-  border: 1px solid #ddd;
+  border: 1px solid #bbb;
   border-radius: 20px;
   background: white;
-  color: #6b6b6b; /* was #999 — failed AA at 2.85:1, now 5.33:1 */
+  color: #333; /* Darkened text for readability */
+  font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -181,7 +201,7 @@ textarea {
 
 /* UPLOAD ZONE */
 .upload-zone {
-  border: 1px dashed #c4a882;
+  border: 1px dashed #b08d65;
   background: #fdf8f2;
   padding: 14px 10px;
   text-align: center;
@@ -199,12 +219,12 @@ textarea {
   outline: 2px solid #8b5e3c;
   outline-offset: 2px;
 }
-.upload-zone .upload-hint { font-size: 0.8rem; color: #6b6b6b; font-weight: 300; } /* was #888 */
-.upload-zone .upload-meta { font-size: 0.7rem; color: #6b6b6b; }                   /* was #bbb — failed badly at 1.82:1 */
+.upload-zone .upload-hint { font-size: 0.8rem; color: #444; font-weight: 500; } 
+.upload-zone .upload-meta { font-size: 0.7rem; color: #555; font-weight: 500; } 
 .upload-filename {
   font-size: 0.8rem;
-  color: #3a3020;
-  font-weight: 500;
+  color: #222;
+  font-weight: 600;
   word-break: break-all;
 }
 
@@ -213,6 +233,7 @@ textarea {
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
+  color: #222;
   cursor: pointer;
 }
 .checkbox-item input[type="checkbox"]:focus-visible {
@@ -220,8 +241,8 @@ textarea {
   outline-offset: 2px;
 }
 .small-note {
-  font-size: 0.65rem;
-  opacity: 0.7;
+  font-size: 0.7rem;
+  color: #555; /* Removed low contrast opacity */
 }
 
 /* BUTTON */
@@ -234,6 +255,7 @@ textarea {
   border-radius: 6px;
   cursor: pointer;
   width: 100%;
+  font-weight: 600;
 }
 .form-submit:focus-visible {
   outline: 2px solid #3a3020;
@@ -258,14 +280,38 @@ textarea {
 }
 
 /* RIGHT SIDE */
+/* .reach-us-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #555;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
 .section-title {
   font-size: 2.2rem;
   margin-bottom: 16px;
+  color: #1a1a1a;
+} */
+
+/* 1. Fix "REACH US" subhead contrast */
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 1000;
+  color: #785334; /* Raised contrast for compliance (~4.8:1) */
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* 2. Fix "Project" italic heading accent contrast */
+.section-title em {
+  color: #785334; /* High-contrast warm bronze (~4.8:1) */
+  font-style: italic;
 }
 .section-desc {
   font-size: 1rem;
-  color: #666;
+  color: #444; /* Darkened for compliance */
   margin-bottom: 24px;
+  line-height: 1.5;
 }
 .contact-detail {
   margin-top: 20px;
@@ -279,12 +325,13 @@ textarea {
 }
 .contact-item h3 {
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 3px;
+  color: #1a1a1a;
 }
 .contact-item p {
   font-size: 0.85rem;
-  color: #666;
+  color: #444; /* Darkened for compliance */
   line-height: 1.6;
   margin: 0;
 }

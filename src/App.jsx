@@ -99,7 +99,7 @@ function Layout() {
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/proservices" element={<Professionals onOpenPrivacy={() => setPrivacyOpen(true)} />} />
-          <Route path="/visualizer" element={<FlooringVisualizer />} />
+          {/* <Route path="/visualizer" element={<FlooringVisualizer />} /> */}
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>

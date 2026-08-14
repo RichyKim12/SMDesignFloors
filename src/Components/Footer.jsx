@@ -55,7 +55,7 @@ function BrandCarousel() {
     if (!isDragging.current) return;
     let newX = animOffset.current + (clientX - startX.current);
     const half = trackRef.current.scrollWidth / 2;
-    if (newX > 0)     newX -= half;
+    if (newX > 0)    newX -= half;
     if (newX < -half) newX += half;
     trackRef.current.style.transform = `translateX(${newX}px)`;
     currentX.current = newX;
@@ -104,7 +104,7 @@ function BrandCarousel() {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', stopDrag);
       track.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove', onTouchMove);
+      track.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', stopDrag);
     };
   }, [isPaused]);

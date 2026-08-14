@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Masonry from 'react-masonry-css';
+import FocusTrap from 'focus-trap-react';
 import './Portfolio.css';
 
 const breakpointCols = {
@@ -19,7 +20,7 @@ const TABS = [
 
 const PAGE_SIZE = 12;
 
-// Injected once into <head> — guaranteed to override anything else
+// Injected once into <head> — contrast and accessibility enhanced
 const LIGHTBOX_STYLES = `
   .lb-backdrop {
     position: fixed !important;
@@ -30,7 +31,7 @@ const LIGHTBOX_STYLES = `
     width: 100vw !important;
     height: 100vh !important;
     z-index: 99999 !important;
-    background: rgba(0,0,0,0.92) !important;
+    background: rgba(0,0,0,0.95) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -58,55 +59,67 @@ const LIGHTBOX_STYLES = `
     align-items: center !important;
     width: 100% !important;
     margin-top: 14px !important;
-    color: rgba(255,255,255,0.6) !important;
-    font-size: 0.82rem !important;
-    letter-spacing: 0.06em !important;
+    color: #FFFFFF !important;
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.08em !important;
     text-transform: capitalize !important;
     padding: 0 4px !important;
     font-family: 'Jost', sans-serif !important;
   }
   .lb-counter {
-    color: #B5A47A !important;
-    font-size: 0.76rem !important;
+    color: #F5E6C8 !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.1em !important;
   }
   .lb-close {
     position: fixed !important;
     top: 24px !important;
     right: 28px !important;
     z-index: 100001 !important;
-    background: rgba(255,255,255,0.1) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    color: white !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 2px solid #FFFFFF !important;
+    color: #FFFFFF !important;
     font-size: 1.2rem !important;
-    width: 40px !important;
-    height: 40px !important;
+    width: 44px !important;
+    height: 44px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer !important;
     border-radius: 50% !important;
-    transition: background 0.2s !important;
+    transition: background 0.2s, transform 0.2s !important;
   }
-  .lb-close:hover { background: rgba(255,255,255,0.25) !important; }
+  .lb-close:hover, .lb-close:focus { 
+    background: #FFFFFF !important; 
+    color: #000000 !important;
+    outline: none !important;
+  }
   .lb-prev, .lb-next {
     position: fixed !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
     z-index: 100001 !important;
-    background: rgba(255,255,255,0.08) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    color: white !important;
-    font-size: 2.5rem !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 2px solid #FFFFFF !important;
+    color: #FFFFFF !important;
+    font-size: 2.2rem !important;
     width: 52px !important;
     height: 52px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer !important;
-    transition: background 0.2s !important;
+    transition: background 0.2s, color 0.2s !important;
     line-height: 1 !important;
+    border-radius: 4px !important;
   }
-  .lb-prev:hover, .lb-next:hover { background: rgba(255,255,255,0.2) !important; }
+  .lb-prev:hover, .lb-next:hover, .lb-prev:focus, .lb-next:focus { 
+    background: #FFFFFF !important; 
+    color: #000000 !important;
+    outline: none !important;
+  }
   .lb-prev { left: 20px !important; }
   .lb-next { right: 20px !important; }
   @media (max-width: 700px) {
@@ -114,7 +127,6 @@ const LIGHTBOX_STYLES = `
   }
 `;
 
-// Inject styles into <head> once at module load time
 if (typeof document !== 'undefined' && !document.getElementById('lb-styles')) {
   const style = document.createElement('style');
   style.id = 'lb-styles';
@@ -123,10 +135,12 @@ if (typeof document !== 'undefined' && !document.getElementById('lb-styles')) {
 }
 
 export default function Portfolio() {
-  const [allImages, setAllImages]      = useState([]);
-  const [activeTab, setActiveTab]      = useState('all');
+  const [allImages, setAllImages]       = useState([]);
+  const [activeTab, setActiveTab]       = useState('all');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [lightbox, setLightbox]        = useState(null);
+  const [lightbox, setLightbox]         = useState(null);
+
+  const triggerRef = useRef(null);
 
   useEffect(() => {
     const flooringFiles = import.meta.glob('../assets/flooring/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' });
@@ -155,12 +169,21 @@ export default function Portfolio() {
     setVisibleCount(PAGE_SIZE);
   };
 
-  const openLightbox = (item) => {
+  const openLightbox = (item, event) => {
+    if (event?.currentTarget) {
+      triggerRef.current = event.currentTarget;
+    }
     const index = filtered.findIndex(f => f.id === item.id);
     setLightbox({ images: filtered, index });
   };
 
-  const closeLightbox = useCallback(() => setLightbox(null), []);
+  const closeLightbox = useCallback(() => {
+    setLightbox(null);
+    setTimeout(() => {
+      triggerRef.current?.focus();
+    }, 50);
+  }, []);
+
   const prevImage     = useCallback(() => setLightbox(lb => ({ ...lb, index: (lb.index - 1 + lb.images.length) % lb.images.length })), []);
   const nextImage     = useCallback(() => setLightbox(lb => ({ ...lb, index: (lb.index + 1) % lb.images.length })), []);
 
@@ -176,7 +199,6 @@ export default function Portfolio() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleKey]);
 
-  // Lock body scroll when lightbox open
   useEffect(() => {
     document.body.style.overflow = lightbox ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -210,11 +232,11 @@ export default function Portfolio() {
             className="masonry-item"
             role="button"
             tabIndex={0}
-            onClick={() => openLightbox(item)}
+            onClick={(e) => openLightbox(item, e)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                openLightbox(item);
+                openLightbox(item, e);
               }
             }}
             aria-label={`View ${item.alt} in lightbox`}
@@ -236,35 +258,56 @@ export default function Portfolio() {
         </div>
       )}
 
-      {/* Portal renders directly on <body> — bypasses ALL parent stacking contexts */}
       {lightbox && createPortal(
         <div className="lb-backdrop" onClick={closeLightbox}>
+          <FocusTrap active={!!lightbox}>
+            <div 
+              className="lb-dialog-container" 
+              role="dialog" 
+              aria-modal="true" 
+              aria-label="Image Lightbox"
+              onClick={e => e.stopPropagation()}
+            >
+              <button 
+                className="lb-close" 
+                onClick={closeLightbox}
+                aria-label="Close lightbox"
+              >
+                ✕
+              </button>
 
-          <button className="lb-close" onClick={closeLightbox}>✕</button>
+              <button 
+                className="lb-prev" 
+                onClick={e => { e.stopPropagation(); prevImage(); }}
+                aria-label="Previous image"
+              >
+                &#8249;
+              </button>
 
-          <button className="lb-prev" onClick={e => { e.stopPropagation(); prevImage(); }}>
-            &#8249;
-          </button>
+              <div className="lb-content">
+                <img
+                  key={lightbox.index}
+                  src={lightbox.images[lightbox.index].src}
+                  alt={lightbox.images[lightbox.index].alt}
+                  className="lb-img"
+                />
+                <div className="lb-caption">
+                  <span>{lightbox.images[lightbox.index].alt}</span>
+                  <span className="lb-counter">
+                    {lightbox.index + 1} / {lightbox.images.length}
+                  </span>
+                </div>
+              </div>
 
-          <div className="lb-content" onClick={e => e.stopPropagation()}>
-            <img
-              key={lightbox.index}
-              src={lightbox.images[lightbox.index].src}
-              alt={lightbox.images[lightbox.index].alt}
-              className="lb-img"
-            />
-            <div className="lb-caption">
-              <span>{lightbox.images[lightbox.index].alt}</span>
-              <span className="lb-counter">
-                {lightbox.index + 1} / {lightbox.images.length}
-              </span>
+              <button 
+                className="lb-next" 
+                onClick={e => { e.stopPropagation(); nextImage(); }}
+                aria-label="Next image"
+              >
+                &#8250;
+              </button>
             </div>
-          </div>
-
-          <button className="lb-next" onClick={e => { e.stopPropagation(); nextImage(); }}>
-            &#8250;
-          </button>
-
+          </FocusTrap>
         </div>,
         document.body
       )}

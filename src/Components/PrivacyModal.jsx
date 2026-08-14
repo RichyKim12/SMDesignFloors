@@ -93,7 +93,7 @@ export default function PrivacyModal({ isOpen, onClose }) {
             <section className="privacy-section">
               <h3>5. Your Rights &amp; Control</h3>
               <p>
-                You may request access to, correction of, or permanent deletion of your account data at any time by contacting us at <a href="mailto:privacy@smdesignfloors.com">privacy@smdesignfloors.com</a>.
+                You may request access to, correction of, or permanent deletion of your account data at any time by contacting us at <a href="mailto:lastpioneer@hotmail.com">lastpioneer@hotmail.com</a>.
               </p>
             </section>
           </div>

@@ -264,14 +264,21 @@ export default function Professionals() {
     <section id="professionals" aria-label="Contractor registration">
       {/* Left: info panel */}
       <div className="sticky-info" aria-label="About ProServices">
-        <div className="section-label">Trade Network</div>
-        <h2 className="section-title" style={{ fontSize: '2.4rem', marginBottom: 16 }}>
+        <div className="section-label" style={{ color: '#785334', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          Trade Network
+        </div>
+
+        <h2 className="section-title" style={{ fontSize: '2.4rem', marginBottom: 16, color: '#1a1a1a' }}>
           Connect With Our <em>Network Today</em>
         </h2>
-        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.3rem', fontWeight: 400, color: 'var(--tan-dark)', marginBottom: 16, letterSpacing: '0.04em' }}>
+
+        {/* Darkened from var(--tan-dark) to #785334 for high contrast */}
+        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.3rem', fontWeight: 600, color: '#785334', marginBottom: 16, letterSpacing: '0.04em' }}>
           Join ProServices
         </p>
-        <p style={{ color: 'var(--mid)', fontSize: '0.9rem', lineHeight: 1.75, fontWeight: 300, maxWidth: 380 }}>
+
+        {/* Replaced var(--mid) with #2c251e and bumped font weight from 300 to 450 */}
+        <p style={{ color: '#2c251e', fontSize: '0.92rem', lineHeight: 1.75, fontWeight: 450, maxWidth: 380 }}>
           ProServices is our dedicated contractor registration platform designed to connect skilled
           professionals with new project opportunities. Contractors can submit their business
           information, areas of expertise, service locations, licensing details, and contact
@@ -281,6 +288,7 @@ export default function Professionals() {
           services, ProServices makes it easy to get registered and stay connected. Once enrolled,
           our team can quickly reach out when projects matching your skills become available.
         </p>
+
         <div className="feature-list">
           {FEATURES.map((f) => (
             <div key={f.title} className="feature-item">
