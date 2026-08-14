@@ -1,5 +1,7 @@
-import { useState, useRef, useId } from 'react';
+import { useState, useRef, useId, useEffect } from 'react';
+import FocusTrap from 'focus-trap-react';
 import './Professionals.css';
+import PrivacyModal from './PrivacyModal'; // Reusing external component
 import { supabase } from '../lib/supabase';
 import {
   sanitizeText,
@@ -76,7 +78,7 @@ async function uploadDocument(file, type, userEmail) {
 }
 
 // ─── Component ────────────────────────────────────────────────
-export default function Professionals() {
+export default function Professionals({ onOpenPrivacy }) {
   const uid = useId();
   const fid = (name) => `${uid}-${name}`;
 
@@ -85,9 +87,9 @@ export default function Professionals() {
   const [fieldError, setFieldError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Separate Modal States
+  // Modal States
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showLocalPrivacyModal, setShowLocalPrivacyModal] = useState(false);
 
   const [selectedProfs, setSelectedProfs] = useState([]);
   const [availability, setAvailability] = useState([]);
@@ -103,6 +105,39 @@ export default function Professionals() {
   const certFileRef = useRef(null);
   const insuranceFileRef = useRef(null);
   const errorRef = useRef(null);
+  const submitButtonRef = useRef(null);
+
+  // Handle Privacy Modal Triggering
+  const handleOpenPrivacy = (e) => {
+    e.preventDefault();
+    if (onOpenPrivacy) {
+      onOpenPrivacy();
+    } else {
+      setShowLocalPrivacyModal(true);
+    }
+  };
+
+  // Close Success Modal & restore focus
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setTimeout(() => submitButtonRef.current?.focus(), 50);
+  };
+
+  const handleNavigateDashboard = () => {
+    setShowSuccessModal(false);
+    window.location.href = '/contractor';
+  };
+
+  // Escape Key Handler for Success Modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showSuccessModal) {
+        handleSuccessModalClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSuccessModal]);
 
   // ── Helpers ─────────────────────────────────────────────────
   function showErr(msg, field = '') {
@@ -125,16 +160,6 @@ export default function Professionals() {
   };
 
   const isActive = (day, time) => availability.includes(`${day} ${time}`);
-
-  const handleOpenPrivacy = (e) => {
-    e.preventDefault();
-    setShowPrivacyModal(true);
-  };
-
-  const handleSuccessModalClose = () => {
-    setShowSuccessModal(false);
-    window.location.href = '/contractor';
-  };
 
   // ── File handler ─────────────────────────────────────────────
   async function handleFileChange(setter, file, fileType) {
@@ -163,7 +188,6 @@ export default function Professionals() {
   }
 
   // ── Submit Handler ───────────────────────────────────────────
-  // ── Submit Handler ───────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setShowError(false);
@@ -172,7 +196,7 @@ export default function Professionals() {
     const rateCheck = checkRateLimit('professional-registration');
     if (!rateCheck.allowed) {
       showErr(`Too many attempts. Please try again in ${formatRetryTime(rateCheck.retryAfterMs)}.`);
-      // return;
+      return;
     }
 
     const formEl = e.currentTarget;
@@ -211,15 +235,12 @@ export default function Professionals() {
     setLoading(true);
 
     try {
-      // 1. Upload documents conditionally
       const [resumePath, certPath, insurancePath] = await Promise.all([
         resumeFile ? uploadDocument(resumeFile, 'resume', rawEmail) : Promise.resolve(null),
         certFile ? uploadDocument(certFile, 'certificate', rawEmail) : Promise.resolve(null),
         insuranceFile ? uploadDocument(insuranceFile, 'insurance', rawEmail) : Promise.resolve(null),
       ]);
 
-      // 2. Sign up user with metadata & file paths
-      // Note: JSON.stringify is used on array fields so Postgres maps them cleanly to JSONB
       const { data, error } = await supabase.auth.signUp({
         email: rawEmail,
         password: password,
@@ -272,12 +293,10 @@ export default function Professionals() {
           Connect With Our <em>Network Today</em>
         </h2>
 
-        {/* Darkened from var(--tan-dark) to #785334 for high contrast */}
         <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.3rem', fontWeight: 600, color: '#785334', marginBottom: 16, letterSpacing: '0.04em' }}>
           Join ProServices
         </p>
 
-        {/* Replaced var(--mid) with #2c251e and bumped font weight from 300 to 450 */}
         <p style={{ color: '#2c251e', fontSize: '0.92rem', lineHeight: 1.75, fontWeight: 450, maxWidth: 380 }}>
           ProServices is our dedicated contractor registration platform designed to connect skilled
           professionals with new project opportunities. Contractors can submit their business
@@ -671,6 +690,7 @@ export default function Professionals() {
             </div>
 
             <button
+              ref={submitButtonRef}
               type="submit"
               className="form-submit"
               disabled={loading}
@@ -696,156 +716,132 @@ export default function Professionals() {
         </div>
       </div>
 
-      {/* ─── 1. Submission Success Modal ────────────────────────────── */}
+      {/* ─── 1. Submission Success Modal (with Focus Trap & Close Option) ────────────────────────────── */}
       {showSuccessModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '20px',
-            backdropFilter: 'blur(4px)',
+        <FocusTrap
+          focusTrapOptions={{
+            initialFocus: false,
+            allowOutsideClick: true,
           }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="success-modal-title"
         >
           <div
             style={{
-              backgroundColor: '#fff',
-              borderRadius: '12px',
-              maxWidth: '480px',
-              width: '100%',
-              padding: '32px 28px',
-              textAlign: 'center',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            }}
-          >
-            <div
-              style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '50%',
-                backgroundColor: '#e6f4ea',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px auto',
-              }}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            </div>
-
-            <h3 id="success-modal-title" style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '12px', fontWeight: 600 }}>
-              Welcome to the Network!
-            </h3>
-
-            <p style={{ color: '#666', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '24px' }}>
-              Your contractor account has been successfully created and your application details have been submitted. You are now logged in.
-            </p>
-
-            <button
-              onClick={handleSuccessModalClose}
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                backgroundColor: 'var(--tan-dark, #2a2a2a)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '1rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'background-color 0.2s ease',
-              }}
-            >
-              Go to Dashboard
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ─── 2. Privacy Policy Modal ────────────────────────────── */}
-      {showPrivacyModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '20px',
-            backdropFilter: 'blur(4px)',
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="privacy-modal-title"
-          onClick={() => setShowPrivacyModal(false)}
-        >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: '12px',
-              maxWidth: '600px',
-              width: '100%',
-              maxHeight: '85vh',
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.65)',
               display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-              overflow: 'hidden',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 9999,
+              padding: '20px',
+              backdropFilter: 'blur(4px)',
             }}
-            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="success-modal-title"
           >
-            {/* Modal Header */}
             <div
               style={{
-                padding: '20px 24px',
-                borderBottom: '1px solid #eee',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                backgroundColor: '#fff',
+                borderRadius: '12px',
+                maxWidth: '480px',
+                width: '100%',
+                padding: '32px 28px',
+                textAlign: 'center',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                position: 'relative',
               }}
             >
-              <h3 id="privacy-modal-title" style={{ fontSize: '1.25rem', color: '#1a1a1a', margin: 0, fontWeight: 600 }}>
-                Privacy Policy
-              </h3>
+              {/* Top-right X dismiss button */}
               <button
                 type="button"
-                onClick={() => setShowPrivacyModal(false)}
-                aria-label="Close privacy policy"
+                onClick={handleSuccessModalClose}
+                aria-label="Close message"
                 style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
                   background: 'none',
                   border: 'none',
-                  fontSize: '1.5rem',
-                  lineHeight: 1,
+                  fontSize: '1.25rem',
                   cursor: 'pointer',
                   color: '#666',
+                  padding: '4px 8px',
                 }}
               >
-                &times;
+                ✕
               </button>
-            </div>
 
-            {/* Scrollable Body */}
-            <div style={{ padding: '24px', overflowY: 'auto', fontSize: '0.9rem', lineHeight: 1.6, color: '#444' }}>
-              <p style={{ marginTop: 0 }}>
-                Your privacy is important to us. Information collected through this registration form is used strictly to establish contractor partnerships, verify project availability, and communicate relevant trade opportunities.
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: '#e6f4ea',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px auto',
+                }}
+              >
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+
+              <h3 id="success-modal-title" style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '12px', fontWeight: 600 }}>
+                Welcome to the Network!
+              </h3>
+
+              <p style={{ color: '#666', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '24px' }}>
+                Your contractor account has been successfully created and your application details have been submitted. You are now logged in.
               </p>
-              <p>
-                We store your application details securely and do not share or sell your data to third parties. You may request account deletion or data removal at any time by contacting our team.
-              </p>
+
+              <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
+                <button
+                  type="button"
+                  onClick={handleNavigateDashboard}
+                  style={{
+                    width: '100%',
+                    padding: '12px 20px',
+                    backgroundColor: 'var(--tan-dark, #2a2a2a)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Go to Dashboard
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSuccessModalClose}
+                  style={{
+                    width: '100%',
+                    padding: '10px 20px',
+                    backgroundColor: 'transparent',
+                    color: '#666',
+                    border: '1px solid #ccc',
+                    borderRadius: '6px',
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Stay on Page
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </FocusTrap>
       )}
+
+      {/* ─── 2. Shared External Privacy Policy Modal ────────────────────────────── */}
+      <PrivacyModal
+        isOpen={showLocalPrivacyModal}
+        onClose={() => setShowLocalPrivacyModal(false)}
+      />
     </section>
   );
 }

@@ -35,6 +35,7 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
+/* FIXED: Changed #888888 fallback to #555555 (7:1 contrast) */
 .privacy-modal-close {
   position: absolute;
   top: 16px;
@@ -42,7 +43,7 @@
   background: none;
   border: none;
   font-size: 1.25rem;
-  color: var(--text-muted, #888888);
+  color: var(--text-muted, #555555);
   cursor: pointer;
   padding: 8px;
   line-height: 1;
@@ -53,11 +54,12 @@
   color: #000000;
 }
 
+/* FIXED: Changed #c8953a fallback to #785334 (5.2:1 contrast) */
 .privacy-eyebrow {
   font-size: 0.75rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent-color, #c8953a);
+  color: var(--accent-color, #785334);
   font-weight: 600;
   margin-bottom: 4px;
 }
@@ -70,9 +72,10 @@
   font-weight: 600;
 }
 
+/* FIXED: Changed #777777 fallback to #555555 (7:1 contrast) */
 .privacy-updated {
   font-size: 0.8rem;
-  color: var(--text-muted, #777777);
+  color: var(--text-muted, #555555);
   margin-bottom: 16px;
   border-bottom: 1px solid var(--border-color, #e8e0d4);
   padding-bottom: 12px;
@@ -123,8 +126,9 @@
   margin-bottom: 6px;
 }
 
+/* FIXED: Changed link color fallback from #c8953a to #785334 */
 .privacy-section a {
-  color: var(--accent-color, #c8953a);
+  color: var(--accent-color, #785334);
   text-decoration: underline;
 }
 
