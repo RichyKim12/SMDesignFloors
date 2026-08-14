@@ -12,9 +12,9 @@ const breakpointCols = {
 };
 
 const TABS = [
-  { key: 'all',      label: 'All'      },
+  { key: 'all', label: 'All' },
   { key: 'flooring', label: 'Flooring' },
-  { key: 'kitchen',  label: 'Kitchen'  },
+  { key: 'kitchen', label: 'Kitchen' },
   { key: 'bathroom', label: 'Bathroom' },
 ];
 
@@ -135,16 +135,16 @@ if (typeof document !== 'undefined' && !document.getElementById('lb-styles')) {
 }
 
 export default function Portfolio() {
-  const [allImages, setAllImages]       = useState([]);
-  const [activeTab, setActiveTab]       = useState('all');
+  const [allImages, setAllImages] = useState([]);
+  const [activeTab, setActiveTab] = useState('all');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [lightbox, setLightbox]         = useState(null);
+  const [lightbox, setLightbox] = useState(null);
 
   const triggerRef = useRef(null);
 
   useEffect(() => {
     const flooringFiles = import.meta.glob('../assets/flooring/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' });
-    const kitchenFiles  = import.meta.glob('../assets/kitchen/*.{jpg,jpeg,png,webp}',  { eager: true, import: 'default' });
+    const kitchenFiles = import.meta.glob('../assets/kitchen/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' });
     const bathroomFiles = import.meta.glob('../assets/bathroom/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' });
 
     const toImages = (files, cat) =>
@@ -152,7 +152,7 @@ export default function Portfolio() {
 
     setAllImages([
       ...toImages(flooringFiles, 'flooring'),
-      ...toImages(kitchenFiles,  'kitchen'),
+      ...toImages(kitchenFiles, 'kitchen'),
       ...toImages(bathroomFiles, 'bathroom'),
     ]);
   }, []);
@@ -184,13 +184,13 @@ export default function Portfolio() {
     }, 50);
   }, []);
 
-  const prevImage     = useCallback(() => setLightbox(lb => ({ ...lb, index: (lb.index - 1 + lb.images.length) % lb.images.length })), []);
-  const nextImage     = useCallback(() => setLightbox(lb => ({ ...lb, index: (lb.index + 1) % lb.images.length })), []);
+  const prevImage = useCallback(() => setLightbox(lb => ({ ...lb, index: (lb.index - 1 + lb.images.length) % lb.images.length })), []);
+  const nextImage = useCallback(() => setLightbox(lb => ({ ...lb, index: (lb.index + 1) % lb.images.length })), []);
 
   const handleKey = useCallback((e) => {
     if (!lightbox) return;
-    if (e.key === 'Escape')     closeLightbox();
-    if (e.key === 'ArrowLeft')  prevImage();
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') prevImage();
     if (e.key === 'ArrowRight') nextImage();
   }, [lightbox, closeLightbox, prevImage, nextImage]);
 
@@ -215,6 +215,7 @@ export default function Portfolio() {
             key={tab.key}
             className={`tab-btn${activeTab === tab.key ? ' active' : ''}`}
             onClick={() => handleTabChange(tab.key)}
+            aria-pressed={activeTab === tab.key}
           >
             {tab.label}
           </button>
@@ -261,23 +262,23 @@ export default function Portfolio() {
       {lightbox && createPortal(
         <div className="lb-backdrop" onClick={closeLightbox}>
           <FocusTrap active={!!lightbox}>
-            <div 
-              className="lb-dialog-container" 
-              role="dialog" 
-              aria-modal="true" 
+            <div
+              className="lb-dialog-container"
+              role="dialog"
+              aria-modal="true"
               aria-label="Image Lightbox"
               onClick={e => e.stopPropagation()}
             >
-              <button 
-                className="lb-close" 
+              <button
+                className="lb-close"
                 onClick={closeLightbox}
                 aria-label="Close lightbox"
               >
                 ✕
               </button>
 
-              <button 
-                className="lb-prev" 
+              <button
+                className="lb-prev"
                 onClick={e => { e.stopPropagation(); prevImage(); }}
                 aria-label="Previous image"
               >
@@ -299,8 +300,8 @@ export default function Portfolio() {
                 </div>
               </div>
 
-              <button 
-                className="lb-next" 
+              <button
+                className="lb-next"
                 onClick={e => { e.stopPropagation(); nextImage(); }}
                 aria-label="Next image"
               >
