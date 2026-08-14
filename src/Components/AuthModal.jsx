@@ -119,7 +119,7 @@ export default function AuthModal({ isOpen, onClose }) {
   }
 
   if (!isOpen) {
-    return <div className="modal-overlay" aria-hidden="true" />
+    return null;
   }
 
   return (

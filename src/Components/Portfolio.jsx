@@ -123,10 +123,10 @@ if (typeof document !== 'undefined' && !document.getElementById('lb-styles')) {
 }
 
 export default function Portfolio() {
-  const [allImages, setAllImages]       = useState([]);
-  const [activeTab, setActiveTab]       = useState('all');
+  const [allImages, setAllImages]      = useState([]);
+  const [activeTab, setActiveTab]      = useState('all');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [lightbox, setLightbox]         = useState(null);
+  const [lightbox, setLightbox]        = useState(null);
 
   useEffect(() => {
     const flooringFiles = import.meta.glob('../assets/flooring/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' });
@@ -205,7 +205,20 @@ export default function Portfolio() {
         columnClassName="my-masonry-grid_column"
       >
         {visible.map((item) => (
-          <div key={item.id} className="masonry-item" onClick={() => openLightbox(item)}>
+          <div
+            key={item.id}
+            className="masonry-item"
+            role="button"
+            tabIndex={0}
+            onClick={() => openLightbox(item)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openLightbox(item);
+              }
+            }}
+            aria-label={`View ${item.alt} in lightbox`}
+          >
             <img src={item.src} alt={item.alt} loading="lazy" />
             <div className="masonry-overlay">
               <span className="masonry-zoom">+</span>
