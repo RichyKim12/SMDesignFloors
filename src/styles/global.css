@@ -104,3 +104,61 @@ main:focus {
 main:focus-visible {
   outline: none;
 }
+
+/* ==========================================
+   MOBILE RESPONSIVE & OVERFLOW FIXES
+   ========================================== */
+
+/* 1. Universal Layout Containment */
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+#root, main {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* 2. Responsive Images & Media Protection */
+img, svg, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 3. Global Section Containment */
+section {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+/* 4. Mobile Breakpoints (< 768px) */
+@media (max-width: 768px) {
+  section {
+    padding: 60px 16px; /* Scaled down padding to avoid narrow squeezing */
+  }
+
+  .form-card {
+    padding: 28px 18px; /* Fit form cards within narrow mobile screens */
+  }
+
+  /* Force grid rows to stack vertically without spilling horizontally */
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  /* Wrap filter tabs/buttons naturally on mobile */
+  .filter-bar,
+  .tabs-container,
+  .gallery-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+  }
+}

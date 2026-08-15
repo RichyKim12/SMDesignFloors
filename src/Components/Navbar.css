@@ -2,15 +2,17 @@ nav {
   position: fixed; 
   top: 0; 
   left: 0; 
-  right: 0; 
+  width: 100vw;
+  max-width: 100%;
   z-index: 100;
   background: var(--tan); 
   height: 72px; 
-  padding: 0 60px;
+  padding: 0 16px;
   display: flex; 
   align-items: center; 
   justify-content: space-between;
   box-shadow: 0 2px 24px rgba(0,0,0,0.15);
+  box-sizing: border-box;
 }
 
 /* Accessible Focus Ring across Navbar Elements */
@@ -56,6 +58,8 @@ nav button:focus-visible {
   align-items: center;
   gap: 36px;
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .nav-links a {
@@ -90,6 +94,7 @@ nav button:focus-visible {
   white-space: nowrap;
   text-decoration: none;
   display: inline-block;
+  border-radius: 4px;
 }
 
 .nav-dashboard-btn:hover,
@@ -113,6 +118,7 @@ nav button:focus-visible {
   cursor: pointer;
   transition: background 0.22s, color 0.22s, transform 0.18s;
   white-space: nowrap;
+  border-radius: 4px;
 }
 
 .nav-login-btn:hover {
@@ -121,79 +127,152 @@ nav button:focus-visible {
   transform: translateY(-1px);
 }
 
-/* Hamburger toggle button */
+/* Hamburger toggle button - WCAG SC 2.5.8 Compliant (Minimum 40x40px hit area) */
 .nav-toggle {
   display: none;
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
   flex-direction: column;
   gap: 5px;
+  z-index: 101; /* Keep above dropdown */
+  flex-shrink: 0; /* Prevent toggle from shrinking to zero width */
 }
 
 .hamburger-bar {
   width: 24px;
   height: 2px;
   background-color: var(--cream);
-  transition: transform 0.2s, opacity 0.2s;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  transform-origin: center;
 }
 
-/* Schedule banner */
+/* Morph hamburger bars into 'X' when open */
+.nav-toggle.open .hamburger-bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.nav-toggle.open .hamburger-bar:nth-child(2) {
+  opacity: 0;
+}
+.nav-toggle.open .hamburger-bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Schedule banner formatting */
 .schedule-banner {
   position: fixed; 
   top: 72px; 
   left: 0; 
-  right: 0; 
+  width: 100vw;
+  max-width: 100%;
   z-index: 99;
-  padding: 10px 60px;
+  padding: 6px 12px;
   display: flex; 
   align-items: center; 
   justify-content: center; 
-  gap: 10px;
+  gap: 8px;
   font-family: 'Jost', sans-serif; 
-  font-size: 0.88rem;
-  letter-spacing: 0.1em; 
+  font-size: 0.75rem;
+  letter-spacing: 0.05em; 
   text-transform: uppercase; 
-  font-weight: 400;
+  font-weight: 500;
+  box-sizing: border-box;
 }
 
 .schedule-banner.open   { background: var(--tan-dark); color: var(--cream); }
-.schedule-banner.closed { background: var(--dark); color: rgba(255,255,255,0.6); }
+.schedule-banner.closed { background: var(--dark); color: rgba(255,255,255,0.75); }
 
 .schedule-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .open   .schedule-dot { background: #7ecf7e; }
 .closed .schedule-dot { background: #e07070; }
 
+.schedule-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100vw - 40px);
+}
+
+/* Tablet view */
 @media (max-width: 900px) {
   nav { padding: 0 24px; }
-  .schedule-banner { padding: 10px 24px; }
-  .nav-links { gap: 18px; }
-  .nav-visualizer-btn, .nav-dashboard-btn { padding: 7px 14px; font-size: 0.78rem; }
-  .nav-login-btn { padding: 7px 14px; font-size: 0.78rem; }
+  .schedule-banner { padding: 8px 24px; font-size: 0.78rem; }
+  .nav-links { gap: 20px; }
+  .nav-visualizer-btn, .nav-dashboard-btn, .nav-login-btn { padding: 7px 14px; font-size: 0.78rem; }
   .nav-links a { font-size: 0.82rem; }
 }
 
-@media (max-width: 700px) {
-  .nav-toggle {
-    display: flex;
+/* Mobile View - Hamburger Menu Transition */
+/* Mobile View - Fixes links overlapping hamburger */
+@media (max-width: 768px) {
+  nav {
+    padding: 0 12px;
   }
 
+  .nav-toggle {
+    display: flex !important; /* Shows hamburger toggle */
+  }
+
+  .nav-logo-name {
+    display: inline-block;
+    font-size: 0.85rem; /* Slightly smaller text to leave plenty of room */
+    margin-left: 4px;
+  }
+
+  .nav-logo-text {
+    font-size: 1.1rem;
+  }
+
+  .nav-logo-img {
+    height: 36px;
+  }
+
+  /* ABSOLUTE POSITIONING DROPDOWN (Removes links from top nav row) */
   .nav-links {
-    display: none;
     position: absolute;
     top: 72px;
     left: 0;
     right: 0;
     background: var(--tan);
     flex-direction: column;
-    padding: 24px;
-    gap: 20px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    align-items: center;
+    padding: 24px 16px;
+    gap: 16px;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    
+    /* Hide off-screen by default */
+    display: none;
+    pointer-events: none;
   }
 
+  /* Reveal mobile menu when hamburger is toggled */
   .nav-links.active {
-    display: flex;
+    display: flex !important;
+    pointer-events: auto;
+  }
+
+  .nav-links li {
+    width: 100%;
+    text-align: center;
+  }
+
+  .nav-links a,
+  .nav-login-btn,
+  .nav-dashboard-btn {
+    width: 100%;
+    display: block;
+    padding: 12px 0;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+  }
+
+  .schedule-banner {
+    font-size: 0.65rem;
   }
 }

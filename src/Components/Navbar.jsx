@@ -14,7 +14,7 @@ function ScheduleBanner() {
   const isOpen      = day >= 1 && day <= 6 && timeDecimal >= 10 && timeDecimal < 18;
 
   let text = '';
-  if (isSunday)              text = 'Sunday — Closed Today';
+  if (isSunday)          text = 'Sunday — Closed Today';
   else if (isOpen)           text = `${dayName} — Open Today · 10:00 AM – 6:00 PM`;
   else if (timeDecimal < 10) text = `${dayName} — Opens at 10:00 AM`;
   else                       text = `${dayName} — Closed · Opens Tomorrow at 10:00 AM`;
@@ -22,7 +22,7 @@ function ScheduleBanner() {
   return (
     <div className={`schedule-banner ${isOpen ? 'open' : 'closed'}`}>
       <span className="schedule-dot" />
-      <span>{text}</span>
+      <span className="schedule-text">{text}</span>
     </div>
   );
 }
@@ -63,13 +63,6 @@ export default function Navbar({ onLoginClick, loginTriggerRef }) {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setRole(null);
-    setIsMobileMenuOpen(false);
-    navigate('/');
-  };
-
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   return (
@@ -101,7 +94,7 @@ export default function Navbar({ onLoginClick, loginTriggerRef }) {
         {/* Mobile Hamburger Button */}
         {!isDashboard && (
           <button
-            className="nav-toggle"
+            className={`nav-toggle ${isMobileMenuOpen ? 'open' : ''}`}
             aria-expanded={isMobileMenuOpen}
             aria-controls="nav-menu"
             aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
