@@ -438,14 +438,17 @@ input[type="file"],
 }
 
 /* Rounded Close / Remove Button */
+/* Rounded Close / Remove Button */
 .file-remove-circle {
   background: transparent;
   border: none;
   color: #8c8273;
-  font-size: 1.2rem;
-  line-height: 1;
+  font-size: 1.1rem;
+  line-height: 24px;
   width: 24px;
+  min-width: 24px;
   height: 24px;
+  min-height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -454,6 +457,7 @@ input[type="file"],
   flex-shrink: 0;
   transition: background 0.15s, color 0.15s;
   padding: 0;
+  box-sizing: border-box;
 }
 
 .file-remove-circle:hover {
@@ -496,3 +500,4 @@ input[type="file"],
     padding: 14px 8px;
   }
 }
+
