@@ -32,9 +32,9 @@ export default function Navbar({ onLoginClick, loginTriggerRef }) {
   const navigate     = useNavigate();
   const isDashboard  = location.pathname === '/contractor' || location.pathname === '/admin';
   const [role, setRole] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // get current session role
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session?.user) return setRole(null);
       const { data } = await supabase
@@ -45,7 +45,6 @@ export default function Navbar({ onLoginClick, loginTriggerRef }) {
       setRole(data?.role || null);
     });
 
-    // listen for auth changes (login / logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session?.user) return setRole(null);
       const { data } = await supabase
@@ -59,80 +58,104 @@ export default function Navbar({ onLoginClick, loginTriggerRef }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Close mobile menu on page navigation
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setRole(null);
+    setIsMobileMenuOpen(false);
     navigate('/');
   };
+
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   return (
     <>
       <nav aria-label="Main navigation">
-        {/* Logo — always visible, links home only when not on dashboard */}
-        {isDashboard
-          ? <div className="nav-logo" style={{ cursor: 'default' }}>
-              <img src={triangleLogo} alt="SM Design Floors logo" className="nav-logo-img" />
-              <span className="nav-logo-text">
-                <span style={{ color: '#ff6a00d3' }}>S</span>
-                <span style={{ color: '#3B8C1A' }}>.</span>
-                <span style={{ color: '#f3b20dd7' }}>M</span>
-                <span className="nav-logo-name">Design Floors</span>
-              </span>
-            </div>
-          : <Link to="/" className="nav-logo">
-              <img src={triangleLogo} alt="SM Design Floors logo" className="nav-logo-img" />
-              <span className="nav-logo-text">
-                <span style={{ color: '#ff6a00d3' }}>S</span>
-                <span style={{ color: '#3B8C1A' }}>.</span>
-                <span style={{ color: '#f3b20dd7' }}>M</span>
-                <span className="nav-logo-name">Design Floors</span>
-              </span>
-            </Link>
-        }
+        {/* Logo */}
+        {isDashboard ? (
+          <div className="nav-logo" style={{ cursor: 'default' }}>
+            <img src={triangleLogo} alt="SM Design Floors logo" className="nav-logo-img" />
+            <span className="nav-logo-text">
+              <span style={{ color: '#ff6a00d3' }}>S</span>
+              <span style={{ color: '#3B8C1A' }}>.</span>
+              <span style={{ color: '#f3b20dd7' }}>M</span>
+              <span className="nav-logo-name">Design Floors</span>
+            </span>
+          </div>
+        ) : (
+          <Link to="/" className="nav-logo" onClick={closeMobileMenu}>
+            <img src={triangleLogo} alt="SM Design Floors logo" className="nav-logo-img" />
+            <span className="nav-logo-text">
+              <span style={{ color: '#ff6a00d3' }}>S</span>
+              <span style={{ color: '#3B8C1A' }}>.</span>
+              <span style={{ color: '#f3b20dd7' }}>M</span>
+              <span className="nav-logo-name">Design Floors</span>
+            </span>
+          </Link>
+        )}
 
-        <ul className="nav-links">
-          {/* Main nav — hidden on dashboard pages */}
+        {/* Mobile Hamburger Button */}
+        {!isDashboard && (
+          <button
+            className="nav-toggle"
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="nav-menu"
+            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+          >
+            <span className="hamburger-bar" />
+            <span className="hamburger-bar" />
+            <span className="hamburger-bar" />
+          </button>
+        )}
+
+        {/* Navigation Links */}
+        <ul
+          id="nav-menu"
+          className={`nav-links ${isMobileMenuOpen ? 'active' : ''}`}
+        >
           {!isDashboard && (
             <>
-              <li><a href="/#services">About Us</a></li>
-              <li><Link to="/proservices">ProServices</Link></li>
-              <li><a href="/#contact">Contact</a></li>
+              <li><a href="/#services" onClick={closeMobileMenu}>About Us</a></li>
+              <li><Link to="/proservices" onClick={closeMobileMenu}>ProServices</Link></li>
+              <li><a href="/#contact" onClick={closeMobileMenu}>Contact</a></li>
             </>
           )}
 
-          {/* Dashboard button — only for logged-in contractors */}
           {role === 'contractor' && !isDashboard && (
             <li>
-              <Link to="/contractor" className="nav-dashboard-btn">
+              <Link to="/contractor" className="nav-dashboard-btn" onClick={closeMobileMenu}>
                 Dashboard
               </Link>
             </li>
           )}
 
-          {/* Admin dashboard button */}
           {role === 'admin' && !isDashboard && (
             <li>
-              <Link to="/admin" className="nav-dashboard-btn">
+              <Link to="/admin" className="nav-dashboard-btn" onClick={closeMobileMenu}>
                 Admin Panel
               </Link>
             </li>
           )}
 
-          {/* Sign out on dashboard, login elsewhere */}
-          {isDashboard
-            ? <></>
-            : !role && (
-              <li>
-                <button
-                  className="nav-login-btn"
-                  ref={loginTriggerRef}
-                  onClick={onLoginClick}
-                >
-                  Contractor Login
-                </button>
-              </li>
-            )
-          }
+          {isDashboard ? null : !role && (
+            <li>
+              <button
+                className="nav-login-btn"
+                ref={loginTriggerRef}
+                onClick={() => {
+                  closeMobileMenu();
+                  onLoginClick();
+                }}
+              >
+                Contractor Login
+              </button>
+            </li>
+          )}
         </ul>
       </nav>
       <ScheduleBanner />

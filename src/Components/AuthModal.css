@@ -36,15 +36,22 @@
 /* Close button */
 .modal-close {
   position: absolute;
-  top: 16px;
-  right: 20px;
+  top: 6px;
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
-  font-size: 1rem;
+  font-size: 1.25rem;
   color: var(--mid);
   cursor: pointer;
   line-height: 1;
-  transition: color 0.2s;
+  transition: color 0.2s, background-color 0.2s;
+  border-radius: 4px;
+  padding: 0;
 }
 .modal-close:hover { color: var(--dark); }
 .modal-close:focus-visible {

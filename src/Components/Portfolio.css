@@ -17,6 +17,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   margin-bottom: 48px;
 }
+
 .tab-btn {
   background: none;
   border: none;
@@ -31,6 +32,7 @@
   position: relative;
   transition: color 0.25s;
 }
+
 .tab-btn::after {
   content: '';
   position: absolute;
@@ -40,9 +42,18 @@
   transform: scaleX(0);
   transition: transform 0.3s;
 }
+
 .tab-btn.active        { color: #FFFFFF; font-weight: 600; }
 .tab-btn.active::after { transform: scaleX(1); }
-.tab-btn:hover, .tab-btn:focus { color: #FFFFFF; outline: none; }
+.tab-btn:hover         { color: #FFFFFF; }
+
+/* Clear, accessible keyboard focus indicator */
+.tab-btn:focus-visible {
+  color: #FFFFFF;
+  outline: 2px solid #C9BA96;
+  outline-offset: -2px;
+  border-radius: 2px;
+}
 
 /* ── Masonry grid ─────────────────────────────────────────────── */
 .my-masonry-grid {
@@ -63,6 +74,12 @@
   cursor: pointer;
   background: var(--mid);
 }
+
+.masonry-item:focus-visible {
+  outline: 3px solid #C9BA96;
+  outline-offset: 2px;
+}
+
 .masonry-item img {
   width: 100%;
   height: auto;
@@ -118,11 +135,19 @@
   gap: 4px;
   transition: background 0.25s, color 0.25s;
 }
-.btn-load-more:hover, .btn-load-more:focus { 
+
+.btn-load-more:hover { 
   background: #C9BA96; 
   color: #120F0C; 
-  outline: none;
 }
+
+.btn-load-more:focus-visible {
+  background: #C9BA96; 
+  color: #120F0C; 
+  outline: 2px solid #FFFFFF;
+  outline-offset: 3px;
+}
+
 .load-more-count {
   font-size: 0.65rem;
   opacity: 0.9;

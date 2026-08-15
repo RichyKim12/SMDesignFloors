@@ -405,13 +405,13 @@ export default function Contact() {
                 {uploadedFiles.length > 0 && (
                   <div className="uploaded-file-list" style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {uploadedFiles.map((file, idx) => (
-                      <div key={`${file.name}-${idx}`} className="file-pill" style={{ background: '#f0f0f0', padding: '4px 10px', borderRadius: '16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>{file.name}</span>
+                      <div key={`${file.name}-${idx}`} className="file-pill">
+                        <span className="file-pill-name">{file.name}</span>
                         <button
                           type="button"
+                          className="file-remove-btn"
                           onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
                           aria-label={`Remove ${file.name}`}
-                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 'bold' }}
                         >
                           ×
                         </button>
@@ -447,7 +447,7 @@ export default function Contact() {
         <h2 className="section-title">Let's Start Your <em>Project</em></h2>
         <p className="section-desc">
           Free estimates and consultations for all residential and commercial
-          projects. We provide quotes within 24 hours. 
+          projects. We provide quotes within 24 hours.
         </p>
         <div className="contact-detail">
           {CONTACT_DETAILS.map(c => (

@@ -63,6 +63,33 @@
   font-weight: 450; 
 }
 
+/* ── Form Control & Focus Indicators ───────────────────────── */
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  border: 1.5px solid #8b5e3c;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1a1a1a;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* High contrast focus ring for form inputs */
+.form-group input:focus-visible,
+.form-group select:focus-visible,
+.form-group textarea:focus-visible,
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: 2px solid #8b5e3c;
+  outline-offset: 2px;
+  border-color: #5c3a21;
+}
+
 /* File Upload Grid */
 .upload-grid {
   display: grid;
@@ -222,6 +249,11 @@
   font-size: 0.87rem;
   color: #1a1a1a;
   cursor: pointer;
+}
+
+.checkbox-item input[type="checkbox"]:focus-visible {
+  outline: 2px solid #8b5e3c;
+  outline-offset: 2px;
 }
 
 /* Account Notice */

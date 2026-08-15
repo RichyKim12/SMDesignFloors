@@ -172,10 +172,12 @@ textarea {
 
 /* PILL BUTTONS */
 .pill-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 6px 0;
-  font-size: 0.75rem;
+  padding: 8px 0;
+  font-size: 0.78rem;
   font-family: inherit;
   border: 1px solid #bbb;
   border-radius: 20px;
@@ -199,33 +201,109 @@ textarea {
   color: white;
 }
 
-/* UPLOAD ZONE */
+/* UPLOAD ZONE & ENLARGED FILE PILLS */
 .upload-zone {
-  border: 1px dashed #b08d65;
+  border: 1.5px dashed #b08d65;
   background: #fdf8f2;
-  padding: 14px 10px;
+  padding: 16px 14px;
   text-align: center;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
+  min-height: 80px;
   box-sizing: border-box;
+  transition: border-color 0.2s, background-color 0.2s;
 }
-.upload-zone:hover { border-color: #8b5e3c; }
+.upload-zone:hover { 
+  border-color: #8b5e3c; 
+  background: #f9f1e6;
+}
 .upload-zone:focus-visible {
   outline: 2px solid #8b5e3c;
   outline-offset: 2px;
 }
-.upload-zone .upload-hint { font-size: 0.8rem; color: #444; font-weight: 500; } 
-.upload-zone .upload-meta { font-size: 0.7rem; color: #555; font-weight: 500; } 
-.upload-filename {
-  font-size: 0.8rem;
-  color: #222;
+.upload-zone .upload-hint { 
+  font-size: 0.88rem; 
+  color: #222; 
+  font-weight: 600; 
+} 
+.upload-zone .upload-meta { 
+  font-size: 0.78rem; 
+  color: #555; 
+  font-weight: 500; 
+} 
+
+/* ATTACHED FILE PILLS */
+.file-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  list-style: none;
+  padding: 0;
+}
+
+.file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #f4ede4;
+  border: 1px solid #8b5e3c;
+  border-radius: 24px;
+  padding: 8px 12px 8px 16px;
+  min-height: 44px; /* WCAG SC 2.5.8 Minimum Touch Target */
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.file-pill-name {
+  font-size: 0.85rem;
+  color: #1a1a1a;
   font-weight: 600;
-  word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.file-pill-size {
+  font-size: 0.75rem;
+  color: #555;
+  font-weight: 500;
+}
+
+/* FILE REMOVE BUTTON */
+.file-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;  /* Meets and exceeds 24px minimum requirement */
+  min-height: 28px; /* Meets and exceeds 24px minimum requirement */
+  border: none;
+  background: rgba(139, 94, 60, 0.12);
+  color: #5c3a21;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.18s, color 0.18s;
+}
+
+.file-remove-btn:hover {
+  background: #8b5e3c;
+  color: #ffffff;
+}
+
+.file-remove-btn:focus-visible {
+  outline: 2px solid #5c3a21;
+  outline-offset: 2px;
 }
 
 .checkbox-item {
@@ -280,20 +358,6 @@ textarea {
 }
 
 /* RIGHT SIDE */
-/* .reach-us-tag {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #555;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.section-title {
-  font-size: 2.2rem;
-  margin-bottom: 16px;
-  color: #1a1a1a;
-} */
-
-/* 1. Fix "REACH US" subhead contrast */
 .section-label {
   font-size: 0.75rem;
   font-weight: 1000;
@@ -302,7 +366,7 @@ textarea {
   text-transform: uppercase;
 }
 
-/* 2. Fix "Project" italic heading accent contrast */
+/* Fix "Project" italic heading accent contrast */
 .section-title em {
   color: #785334; /* High-contrast warm bronze (~4.8:1) */
   font-style: italic;
