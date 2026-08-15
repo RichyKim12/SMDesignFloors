@@ -379,14 +379,11 @@ export default function Contact() {
                 Project Files & Floor Plans <span className="form-legend-hint">(optional, up to 5)</span>
               </legend>
               <div className="upload-field">
-                <div
+                <button
+                  type="button"
                   className="upload-zone"
-                  role="button"
-                  tabIndex={0}
                   aria-label="Upload files"
-                  aria-describedby={fid('file-hint')}
-                  onClick={() => fileInputRef.current.click()}
-                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && fileInputRef.current.click()}
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <input
                     ref={fileInputRef}
@@ -400,7 +397,7 @@ export default function Contact() {
                   />
                   <div className="upload-hint">Click or press Enter to add files ({uploadedFiles.length}/{MAX_FILES})</div>
                   <div id={fid('file-hint')} className="upload-meta">PNG, PDF, JPEG, DOCX · Max 10 MB per file</div>
-                </div>
+                </button>
 
                 {uploadedFiles.length > 0 && (
                   <div className="uploaded-file-list" style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>

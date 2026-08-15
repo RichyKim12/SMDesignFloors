@@ -100,7 +100,7 @@ nav {
   font-size: 0.7rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--tan);
+  color: var(--tan-dark);
   margin-bottom: 24px;
 }
 
@@ -134,7 +134,7 @@ nav {
 }
 
 .btn-primary {
-  background: var(--tan);
+  background: var(--tan-dark);
   color: var(--cream);
   padding: 15px 38px;
   font-size: 0.76rem;
@@ -153,7 +153,7 @@ nav {
 
 .btn-outline {
   background: transparent;
-  color: var(--tan);
+  color: var(--tan-dark);
   padding: 14px 36px;
   font-size: 0.76rem;
   letter-spacing: 0.14em;
