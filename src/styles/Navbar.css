@@ -34,18 +34,18 @@
 }
 
 .nav-links a {
-  color: var(--cream);
+  color: var(--dark);
   text-decoration: none;
   font-size: 0.76rem;
   font-weight: 400;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  opacity: 0.82;
+  /* opacity: 0.82; */
   transition: opacity 0.2s;
 }
 
 .nav-links a:hover {
-  opacity: 1;
+  color: var(--dark);
 }
 
 @media (max-width: 900px) {

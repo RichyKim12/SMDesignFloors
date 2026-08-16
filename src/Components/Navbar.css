@@ -63,18 +63,18 @@ nav button:focus-visible {
 }
 
 .nav-links a {
-  color: var(--cream); 
+  color: var(--dark); 
   text-decoration: none;
   font-size: 0.88rem; 
   font-weight: 500;
   letter-spacing: 0.14em; 
   text-transform: uppercase;
-  opacity: 0.82; 
+  /* opacity: 0.82;  */
   transition: opacity 0.2s;
 }
 
 .nav-links a:hover { 
-  opacity: 1; 
+  color: var(--cream);
 }
 
 /* Visualizer & Dashboard buttons */
@@ -107,7 +107,7 @@ nav button:focus-visible {
 /* Login button */
 .nav-login-btn {
   background: transparent;
-  color: var(--cream);
+  color: var(--dark);
   border: 1px solid var(--cream);
   padding: 9px 20px;
   font-family: 'Jost', sans-serif;
