@@ -63,7 +63,7 @@ nav button:focus-visible {
 }
 
 .nav-links a {
-  color: white; 
+  color: var(--cream); 
   text-decoration: none;
   font-size: 0.88rem; 
   font-weight: 500;
@@ -107,7 +107,7 @@ nav button:focus-visible {
 /* Login button */
 .nav-login-btn {
   background: transparent;
-  color: white;
+  color: var(--cream);
   border: 1px solid var(--cream);
   padding: 9px 20px;
   font-family: 'Jost', sans-serif;

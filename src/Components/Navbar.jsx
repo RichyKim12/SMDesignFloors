@@ -73,9 +73,9 @@ export default function Navbar({ onLoginClick, loginTriggerRef }) {
           <div className="nav-logo" style={{ cursor: 'default' }}>
             <img src={triangleLogo} alt="SM Design Floors logo" className="nav-logo-img" />
             <span className="nav-logo-text">
-              <span style={{ color: '#ff6a00d3' }}>S</span>
-              <span style={{ color: '#3B8C1A' }}>.</span>
-              <span style={{ color: '#f3b20dd7' }}>M</span>
+              <span style={{ color: '#FF6A00' }}>S</span>
+              <span style={{ color: '#3FA815' }}>.</span>
+              <span style={{ color: '#F3B20D' }}>M</span>
               <span className="nav-logo-name">Design Floors</span>
             </span>
           </div>
@@ -83,9 +83,9 @@ export default function Navbar({ onLoginClick, loginTriggerRef }) {
           <Link to="/" className="nav-logo" onClick={closeMobileMenu}>
             <img src={triangleLogo} alt="SM Design Floors logo" className="nav-logo-img" />
             <span className="nav-logo-text">
-              <span style={{ color: '#ff6a00d3' }}>S</span>
-              <span style={{ color: '#3B8C1A' }}>.</span>
-              <span style={{ color: '#f3b20dd7' }}>M</span>
+              <span style={{ color: '#FF6A00' }}>S</span>
+              <span style={{ color: '#3FA815' }}>.</span>
+              <span style={{ color: '#F3B20D' }}>M</span>
               <span className="nav-logo-name">Design Floors</span>
             </span>
           </Link>
