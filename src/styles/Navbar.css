@@ -34,7 +34,7 @@
 }
 
 .nav-links a {
-  color: var(--dark);
+  color: var(--tan);
   text-decoration: none;
   font-size: 0.76rem;
   font-weight: 400;
@@ -45,7 +45,7 @@
 }
 
 .nav-links a:hover {
-  color: var(--dark);
+  color: var(--tan-dark);
 }
 
 @media (max-width: 900px) {
