@@ -868,14 +868,17 @@ export default function Professionals({ onOpenPrivacy }) {
 
                       {/* Hidden File Input */}
                       <input
-                        ref={ref}
-                        id={`${btnId}-input`}
                         type="file"
+                        ref={ref}
+                        id={btnId}
                         accept={accept}
+                        aria-label={`Upload ${label}`} /* Fixes the WAVE missing form label error */
                         className="file-input-hidden"
-                        onChange={(e) =>
-                          handleFileChange(setter, e.target.files[0] || null, type)
-                        }
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setter(e.target.files[0]);
+                          }
+                        }}
                       />
 
                       {/* Card Body */}
@@ -1060,10 +1063,11 @@ export default function Professionals({ onOpenPrivacy }) {
 
               <div className="form-group">
                 <textarea
-                  id={fid('notes')}
-                  name="notes"
-                  placeholder="Anything else you would like us to know..."
+                  id="additional-info"
+                  name="additionalInfo"
+                  aria-label="Additional Information"
                   maxLength={1000}
+                  placeholder="Enter any additional details..."
                 />
                 <span className="field-hint">Max 1000 characters</span>
               </div>

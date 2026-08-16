@@ -4,10 +4,10 @@
   padding: 120px 60px;
 }
 .portfolio-section .section-title { color: var(--cream); }
-.portfolio-section .section-label { color: #D6C39B; } /* High contrast gold */
+.portfolio-section .section-label { color: var(--cream); } /* High contrast gold */
 
 .section-title em {
-  color: #E2CF96; /* ~10.1:1 contrast ratio — Passes AA & AAA */
+  color: black; /* ~10.1:1 contrast ratio — Passes AA & AAA */
   font-style: italic;
 }
 

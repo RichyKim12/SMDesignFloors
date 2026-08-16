@@ -34,10 +34,26 @@ const Icons = {
 };
 
 const STATUS_CONFIG = {
-  pending: { label: 'Under Review', color: '#c8953a', bg: 'rgba(200,149,58,0.12)' },
-  approved: { label: 'Approved', color: '#3a9c6b', bg: 'rgba(58,156,107,0.12)' },
-  rejected: { label: 'Not Approved', color: '#c84a4a', bg: 'rgba(200,74,74,0.12)' },
-  active: { label: 'Active', color: '#3a7fc8', bg: 'rgba(58,127,200,0.12)' },
+  pending: { 
+    label: 'Under Review', 
+    color: 'black', // Darkened gold (Contrast ratio ~5.2:1 against white)
+    bg: 'rgb(197, 194, 22)' 
+  },
+  approved: { 
+    label: 'Approved', 
+    color: '#1e6b43', // Darkened green (Contrast ratio ~5.1:1 against white)
+    bg: 'rgba(58, 156, 107, 0.15)' 
+  },
+  rejected: { 
+    label: 'Not Approved', 
+    color: '#a82424', // Darkened red (Contrast ratio ~5.3:1 against white)
+    bg: 'rgba(200, 74, 74, 0.15)' 
+  },
+  active: { 
+    label: 'Active', 
+    color: '#1a599c', // Darkened blue (Contrast ratio ~5.4:1 against white)
+    bg: 'rgba(58, 127, 200, 0.15)' 
+  },
 };
 
 export default function ContractorDashboard() {

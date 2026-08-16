@@ -207,7 +207,7 @@ export default function Portfolio() {
   return (
     <section id="portfolio" className="portfolio-section">
       <div className="section-label">Our Work</div>
-      <h2 className="section-title">Recent <em>Projects</em></h2>
+      <h2 className="section-title">Recent Projects</h2>
 
       <div className="tabs">
         {TABS.map(tab => (

@@ -387,11 +387,12 @@ export default function Contact() {
                 >
                   <input
                     ref={fileInputRef}
+                    id={fid('file-input')}
                     type="file"
                     multiple
                     accept=".png,.pdf,.jpeg,.jpg,.doc,.docx"
+                    aria-label="Upload project files or floor plans"
                     style={{ display: 'none' }}
-                    aria-hidden="true"
                     tabIndex={-1}
                     onChange={e => handleFilesAdded(e.target.files)}
                   />

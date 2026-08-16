@@ -13,7 +13,7 @@
 
 .eyebrow {
   font-size: 0.7rem; letter-spacing: 0.22em;
-  text-transform: uppercase; color: var(--tan-dark); margin-bottom: 24px;
+  text-transform: uppercase; color: var(--tan); margin-bottom: 24px;
 }
 
 .hero-title {
