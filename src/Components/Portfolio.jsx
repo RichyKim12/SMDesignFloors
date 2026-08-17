@@ -4,6 +4,98 @@ import Masonry from 'react-masonry-css';
 import FocusTrap from 'focus-trap-react';
 import './Portfolio.css';
 
+const imageMeta = {
+  // Bathroom Images
+  '../assets/bathroom/4.jpg': {
+    alt: 'Walk-in shower with light beige wall tiles, mosaic accent trim, and brass hardware',
+    description: 'Enclosed walk-in shower featuring classic light beige ceramic tiles, decorative mosaic border, built-in shelving, and polished brass fixtures.'
+  },
+  '../assets/bathroom/6.jpg': {
+    alt: 'Frameless glass shower enclosure with brass fixtures and built-in bench seat',
+    description: 'Spacious walk-in shower with clear frameless glass doors, brass hardware, subtle geometric border accent, and an integrated corner bench.'
+  },
+  '../assets/bathroom/11.jpg': {
+    alt: 'Neo-angle glass shower enclosure with rustic brown textured tile work',
+    description: 'Corner neo-angle shower stall with brushed aluminum framing, detailed earth-tone tile design, and built-in corner ledge.'
+  },
+  '../assets/bathroom/12.jpg': {
+    alt: 'Modern walk-in shower with grey linear wall tiles and hexagon mosaic floor',
+    description: 'Contemporary shower design featuring horizontal grey-banded tile walls, sliding glass doors with sleek roller hardware, and a marble hexagon mosaic floor.'
+  },
+  '../assets/bathroom/16.jpg': {
+    alt: 'Custom tile shower and matching drop-in soaking tub surround',
+    description: 'Bathroom remodel featuring a white shower basin with beige marble-look tile walls, matching tub deck casing, and classic chrome fixtures.'
+  },
+  '../assets/bathroom/19.jpg': {
+    alt: 'Sunlit drop-in soaking tub surrounded by beige stone-look tile walls',
+    description: 'Deep oval soaking tub set in a custom tiled alcove beneath a skylight, complete with dark mosaic accent striping and raised entry step.'
+  },
+  '../assets/bathroom/23.jpg': {
+    alt: 'Modern shower with large-format grey tile, pebble floor, and vertical mosaic stripe',
+    description: 'Walk-in shower with frameless glass panel, large-format grey tile walls, vertical dark pebble accent border, and river stone mosaic floor.'
+  },
+
+  // Flooring Images
+  '../assets/flooring/5.jpg': {
+    alt: 'Warm oak hardwood flooring on entryway stairs and lower landing',
+    description: 'Custom hardwood stair installation using warm oak planks with clean white risers and matching stair nosing.'
+  },
+  '../assets/flooring/7.jpg': {
+    alt: 'Flooring showroom display featuring various wood grain samples and panel layouts',
+    description: 'Showroom display exhibiting a wide selection of hardwood, laminate, and engineered flooring samples alongside decorative inlay patterns.'
+  },
+  '../assets/flooring/9.jpg': {
+    alt: 'Bamboo hardwood staircase installation with stainless steel handrails',
+    description: 'Precision bamboo wood flooring applied across custom multi-tiered steps, fitted with modern brushed stainless steel handrail posts.'
+  },
+
+  // Kitchen Images
+  '../assets/kitchen/8.jpg': {
+    alt: 'Cream painted kitchen cabinets during installation with wall ovens and unfinished counter base',
+    description: 'Kitchen cabinet installation featuring cream raised-panel upper and lower cabinetry, built-in double wall ovens, decorative crown molding, and bare plywood counter sub-bases.'
+  },
+  '../assets/kitchen/10.jpg': {
+    alt: 'Close-up of cream upper cabinets with decorative leaded glass panels and rope crown molding',
+    description: 'Detail view of cream upper cabinetry highlighting interlocking arched leaded glass insert doors, antiqued glaze trim, and ornate rope molding.'
+  },
+  '../assets/kitchen/13.jpg': {
+    alt: 'Upper corner kitchen cabinet with leaded glass door and decorative crown detail',
+    description: 'Upper corner cabinet section featuring leaded glass accent door panel, classic raised-panel doors, and detailed crown molding.'
+  },
+  '../assets/kitchen/15.jpg': {
+    alt: 'Dark cherry wood kitchen cabinets with built-in wall ovens and desk nook',
+    description: 'Rich dark cherry cabinetry installation featuring glass-front display uppers, stainless steel double wall ovens, linear glass mosaic tile backsplash, and a built-in desk nook.'
+  },
+  '../assets/kitchen/17.jpg': {
+    alt: 'Traditional kitchen with light wood cabinetry, green granite island, and hardwood floor',
+    description: 'Spacious kitchen layout with light maple raised-panel cabinets, dark mosaic tile backsplash, green granite island with cooktop, and warm hardwood flooring.'
+  },
+  '../assets/kitchen/20.jpg': {
+    alt: 'L-shaped kitchen layout with light wood cabinets, green granite counters, and island cooktop',
+    description: 'L-shaped kitchen layout featuring light wood upper and lower cabinets, dark mosaic tile backsplash, green granite countertops, stainless steel appliances, and a central cooktop island.'
+  },
+  '../assets/kitchen/21.jpg': {
+    alt: 'Modern espresso wood kitchen cabinetry with stone mosaic backsplash and granite counters',
+    description: 'Contemporary kitchen design with espresso shaker cabinetry, stone pebble mosaic tile backsplash, beige granite countertops, stainless steel appliances, and seating peninsula.'
+  },
+  '../assets/kitchen/22.jpg': {
+    alt: 'Green granite kitchen island with integrated electric cooktop and spice rack',
+    description: 'Close-up of a kitchen island with polished green granite, an integrated electric cooktop with downdraft draft vent, and oak cabinet storage below.'
+  },
+  '../assets/kitchen/bathroom-01.jpg': {
+    alt: 'Modern grey shaker kitchen cabinets with white marble-look quartz counters',
+    description: 'Bright modern kitchen featuring light grey shaker cabinetry, white vein marble-look quartz countertops, stainless steel French door refrigerator, and dark hardwood flooring.'
+  },
+  '../assets/kitchen/flooring-01.jpg': {
+    alt: 'Light oak upper kitchen cabinets with over-the-range stainless steel microwave',
+    description: 'Upper kitchen cabinets in natural light oak finish installed above a stainless steel over-the-range microwave and range cooktop.'
+  },
+  '../assets/kitchen/kitchen-01.jpg': {
+    alt: 'White shaker kitchen cabinets with granite countertops and beige subway tile backsplash',
+    description: 'L-shaped kitchen layout featuring white shaker cabinetry, glass accent corner door, granite countertops, light grey-beige subway tile backsplash, and under-cabinet lighting.'
+  }
+};
+
 const breakpointCols = {
   default: 4,
   1100: 3,
@@ -146,9 +238,20 @@ export default function Portfolio() {
     const flooringFiles = import.meta.glob('../assets/flooring/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' });
     const kitchenFiles = import.meta.glob('../assets/kitchen/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' });
     const bathroomFiles = import.meta.glob('../assets/bathroom/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' });
-
+    
     const toImages = (files, cat) =>
-      Object.entries(files).map(([path, src]) => ({ id: path, src, cat, alt: `${cat} project` }));
+      Object.entries(files).map(([path, src]) => {
+        // Fallback check matching both standard relative path or cleaned path
+        const meta = imageMeta[path] || {};
+        console.log(meta);
+        return {
+          id: path,
+          src,
+          cat,
+          alt: meta.alt,
+          description: meta.description || ''
+        };
+      });
 
     setAllImages([
       ...toImages(flooringFiles, 'flooring'),

@@ -123,7 +123,7 @@
   border: 1.5px solid #C9BA96;
   color: #C9BA96;
   font-family: 'Jost', sans-serif;
-  font-size: 0.76rem;
+  font-size: 0.86rem;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -149,7 +149,7 @@
 }
 
 .load-more-count {
-  font-size: 0.65rem;
+  font-size: 0.85rem;
   opacity: 0.9;
   letter-spacing: 0.08em;
 }

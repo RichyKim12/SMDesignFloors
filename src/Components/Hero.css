@@ -45,7 +45,7 @@
 .img-label {
   position: absolute; bottom: 14px; left: 14px;
   background: rgba(0,0,0,0.45); color: var(--cream);
-  font-size: 0.66rem; letter-spacing: 0.14em;
+  font-size: 0.86rem; letter-spacing: 0.14em;
   text-transform: uppercase; padding: 6px 12px;
   backdrop-filter: blur(4px);
 }

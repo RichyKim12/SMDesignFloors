@@ -24,15 +24,15 @@ export default function Hero() {
 
       <div className="hero-visual">
         <div className="img-box">
-          <img src={imgWork} alt="Our work" />
+          <img src={imgWork} alt="Our work of a bathroom remodeling" />
           <div className="img-label">Our Work</div>
         </div>
         <div className="img-box">
-          <img src={imgStorefront} alt="SM Floors storefront" />
+          <img src={imgStorefront} alt="Our work of a hardwood flooring stair installation" />
           
         </div>
         <div className="img-box">
-          <img src={imgShowroom} alt="Our showroom" />
+          <img src={imgShowroom} alt="Our work of a hardwood flooring and stair installation" />
           
         </div>
         
