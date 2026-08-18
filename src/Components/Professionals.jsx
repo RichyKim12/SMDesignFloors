@@ -9,6 +9,7 @@ import {
   sanitizePhone,
   sanitizeUrl,
   sanitizeNotes,
+  sanitizeFileName,
   validateForm,
   validateFile,
   verifyFileMagic,
@@ -18,6 +19,7 @@ import {
 } from '../lib/formSecurity';
 
 // ─── Whitelisted static data ───────────────────────────────────
+const MAX_FILES = 5;
 const FEATURES = [
   { title: 'Referral Partnerships', desc: 'Earn referral fees when your clients choose our services.' },
   { title: 'Trade Pricing', desc: 'Access wholesale material pricing for your projects.' },
@@ -58,24 +60,43 @@ function calcStrength(pw) {
 const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
 const STRENGTH_COLORS = ['', '#c84a4a', '#c8953a', '#c8b43a', '#3a9c6b'];
 
-// ─── Storage Upload Helper ────────────────────────────────────
-async function uploadDocument(file, type, userEmail) {
-  if (!file) return null;
+// ─── Concurrent Storage Upload Helper ──────────────────────────
+// `userId` MUST be the real Supabase auth user id (data.user.id from
+// signUp), i.e. the same value that ends up as
+// professional_submissions.user_id — not a client-generated UUID.
+async function uploadFiles(userId, files) {
+  if (!files || files.length === 0) return [];
 
-  const cleanEmail = userEmail.replace(/[^a-zA-Z0-9]/g, '_');
-  const fileExt = file.name.split('.').pop();
-  const filePath = `${cleanEmail}/${type}_${Date.now()}.${fileExt}`;
+  const uploadPromises = files.map(async (file) => {
+    const safeName = sanitizeFileName(file.name);
+    const ext = safeName.split('.').pop().replace(/[^a-z0-9]/gi, '').slice(0, 10);
+    const path = `professionals/${userId}/attachment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`;
 
-  const { data, error } = await supabase.storage
-    .from('contractor-documents')
-    .upload(filePath, file);
+    const { error: uploadError } = await supabase.storage
+      .from('submissions-files')
+      .upload(path, file);
 
-  if (error) {
-    console.error(`Error uploading ${type}:`, error);
-    throw new Error(`Failed to upload ${type} document.`);
-  }
+    if (uploadError) {
+      console.error(`Upload error for ${safeName}:`, uploadError);
+      return null;
+    }
 
-  return data.path;
+    const { error: dbError } = await supabase.from('professional_submission_files').insert([{
+      submission_id: userId,
+      file_name: safeName,
+      file_path: path,
+      file_type: 'attachment',
+    }]);
+
+    if (dbError) {
+      console.error(`DB error for ${safeName}:`, dbError);
+    }
+
+    return path;
+  });
+
+  const results = await Promise.all(uploadPromises);
+  return results.filter(Boolean);
 }
 
 // ─── Component ────────────────────────────────────────────────
@@ -94,24 +115,18 @@ export default function Professionals({ onOpenPrivacy }) {
 
   const [selectedProfs, setSelectedProfs] = useState([]);
   const [availability, setAvailability] = useState([]);
-  const [resumeFile, setResumeFile] = useState(null);
-  const [certFile, setCertFile] = useState(null);
-  const [insuranceFile, setInsuranceFile] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [pwStrength, setPwStrength] = useState(0);
 
   const fileInputRef = useRef(null);
-  const certFileRef = useRef(null);
-  const insuranceFileRef = useRef(null);
   const errorRef = useRef(null);
   const submitButtonRef = useRef(null);
 
-  // Handle Privacy Modal Triggering
   const handleOpenPrivacy = (e) => {
     e.preventDefault();
-
     if (onOpenPrivacy) {
       onOpenPrivacy();
     } else {
@@ -119,7 +134,6 @@ export default function Professionals({ onOpenPrivacy }) {
     }
   };
 
-  // Close Success Modal & restore focus
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     setTimeout(() => submitButtonRef.current?.focus(), 50);
@@ -130,16 +144,13 @@ export default function Professionals({ onOpenPrivacy }) {
     window.location.href = '/contractor';
   };
 
-  // Escape Key Handler for Success Modal
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && showSuccessModal) {
         handleSuccessModalClose();
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
-
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showSuccessModal]);
 
@@ -149,71 +160,59 @@ export default function Professionals({ onOpenPrivacy }) {
     setFieldError(field);
     setShowError(true);
     setLoading(false);
-
     setTimeout(() => errorRef.current?.focus(), 50);
   }
 
   const toggleProf = (v) => {
     if (!PROFESSIONS.includes(v)) return;
-
     setSelectedProfs((p) =>
-      p.includes(v)
-        ? p.filter((x) => x !== v)
-        : [...p, v]
+      p.includes(v) ? p.filter((x) => x !== v) : [...p, v]
     );
   };
 
   const toggleSlot = (day, time) => {
     if (!DAYS.includes(day) || !TIMES.includes(time)) return;
-
     const slot = `${day} ${time}`;
-
     setAvailability((prev) =>
-      prev.includes(slot)
-        ? prev.filter((x) => x !== slot)
-        : [...prev, slot]
+      prev.includes(slot) ? prev.filter((x) => x !== slot) : [...prev, slot]
     );
   };
 
-  const isActive = (day, time) =>
-    availability.includes(`${day} ${time}`);
+  const isActive = (day, time) => availability.includes(`${day} ${time}`);
 
-  // ── File handler ─────────────────────────────────────────────
-  async function handleFileChange(setter, file, fileType) {
-    if (!file) {
-      setter(null);
+  // ── Multi-file validation handler ──────────────────────────────
+  async function handleFilesAdded(fileList) {
+    if (!fileList || fileList.length === 0) return;
+
+    const incoming = Array.from(fileList);
+    if (uploadedFiles.length + incoming.length > MAX_FILES) {
+      showErr(`You can upload a maximum of ${MAX_FILES} files.`);
       return;
     }
 
-    // 1. Check file size and declared MIME type
-    const mimeCheck = validateFile(file, fileType);
-    if (!mimeCheck.valid) {
-      showErr(mimeCheck.message);
-      return;
+    const validFiles = [];
+    for (const file of incoming) {
+      const mimeCheck = validateFile(file, 'resume');
+      if (!mimeCheck.valid) {
+        showErr(mimeCheck.message);
+        return;
+      }
+      const magicOk = await verifyFileMagic(file);
+      if (!magicOk) {
+        showErr(`${file.name} does not appear to be a valid file. Please upload genuine documents or images.`);
+        return;
+      }
+      validFiles.push(file);
     }
 
-    // 2. Inspect magic bytes to prevent renamed malicious files
-    const magicOk = await verifyFileMagic(file);
-    if (!magicOk) {
-      showErr(
-        `${file.name} does not appear to be a valid document. ` +
-        `Please upload a genuine PDF, JPG, or DOC file.`
-      );
-      return;
-    }
-
-    setter(file);
+    setUploadedFiles((prev) => [...prev, ...validFiles]);
     setShowError(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  // ── File removal handler ─────────────────────────────────────
-  const removeFile = (setter, inputRef) => {
-    setter(null);
-
-    if (inputRef.current) {
-      inputRef.current.value = '';
-    }
-  };
+  function removeFile(indexToRemove) {
+    setUploadedFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  }
 
   // ── Submit Handler ───────────────────────────────────────────
   const handleSubmit = async (e) => {
@@ -221,7 +220,6 @@ export default function Professionals({ onOpenPrivacy }) {
     setShowError(false);
     setFieldError('');
 
-    // 1. Client-side rate limiting check
     const rateCheck = checkRateLimit();
     if (!rateCheck.allowed) {
       showErr(
@@ -233,14 +231,13 @@ export default function Professionals({ onOpenPrivacy }) {
     const formEl = e.currentTarget;
     const rawData = new FormData(formEl);
 
-    // 2. Strict sanitization layer
     const rawEmail = sanitizeEmail(rawData.get('email') || '');
     const rawName = sanitizeText(rawData.get('name') || '', { maxLength: 80 });
     const rawBusiness = sanitizeText(rawData.get('business') || '', { maxLength: 120 });
     const rawYearsExp = sanitizeText(rawData.get('years_exp') || '', { maxLength: 120 });
     const rawServiceArea = sanitizeText(rawData.get('service_area') || '', { maxLength: 120 });
     const rawWebsite = sanitizeUrl(rawData.get('website') || '');
-    const rawNotes = sanitizeNotes(rawData.get('notes') || '', { maxLength: 1000 });
+    const rawNotes = sanitizeNotes(rawData.get('additionalInfo') || '', { maxLength: 1000 });
     const cleanPhoneVal = sanitizePhone(phone);
 
     const formDataPayload = {
@@ -258,7 +255,6 @@ export default function Professionals({ onOpenPrivacy }) {
       confirmPassword,
     };
 
-    // 3. Strict regex schema validation
     const validation = validateForm(formDataPayload);
     if (!validation.valid) {
       showErr(validation.message, validation.field);
@@ -268,14 +264,10 @@ export default function Professionals({ onOpenPrivacy }) {
     setLoading(true);
 
     try {
-      // 4. Secure document uploads to Supabase storage
-      const [resumePath, certPath, insurancePath] = await Promise.all([
-        resumeFile ? uploadDocument(resumeFile, 'resume', rawEmail) : Promise.resolve(null),
-        certFile ? uploadDocument(certFile, 'certificate', rawEmail) : Promise.resolve(null),
-        insuranceFile ? uploadDocument(insuranceFile, 'insurance', rawEmail) : Promise.resolve(null),
-      ]);
-
-      // 5. Supabase Auth Signup
+      // NOTE: we intentionally do NOT upload files before signUp. Supabase
+      // assigns the real user id server-side, and professional_submissions
+      // (created by a DB trigger off this signUp) is keyed by that user_id.
+      // Uploading against a client-generated id first would orphan the files.
       const { data, error } = await supabase.auth.signUp({
         email: rawEmail,
         password: password,
@@ -290,14 +282,16 @@ export default function Professionals({ onOpenPrivacy }) {
             service_area: rawServiceArea,
             website: rawWebsite,
             notes: rawNotes,
-            resume_path: resumePath,
-            cert_path: certPath,
-            insurance_path: insurancePath,
           },
         },
       });
 
       if (error) throw error;
+
+      const userId = data?.user?.id;
+      if (!userId) {
+        throw new Error('Account was created but no user id was returned.');
+      }
 
       if (!data.session) {
         const { error: signInErr } = await supabase.auth.signInWithPassword({
@@ -307,12 +301,23 @@ export default function Professionals({ onOpenPrivacy }) {
         if (signInErr) throw signInErr;
       }
 
+      // Now that we have the real, permanent user id (matches
+      // professional_submissions.user_id), upload files against it so
+      // professional_submission_files.submission_id actually links up.
+      if (uploadedFiles.length > 0) {
+        const filePaths = await uploadFiles(userId, uploadedFiles);
+        if (filePaths.length < uploadedFiles.length) {
+          console.warn(
+            `Only ${filePaths.length} of ${uploadedFiles.length} files uploaded successfully.`
+          );
+        }
+      }
+
       setLoading(false);
       setShowSuccessModal(true);
+      setUploadedFiles([]);
     } catch (err) {
       console.error('Submission error:', err);
-
-      // 6. Prevent user enumeration leak via error normalization
       showErr(
         normalizeAuthError(err) ||
         'An error occurred during registration. Please try again.'
@@ -320,13 +325,9 @@ export default function Professionals({ onOpenPrivacy }) {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────
   return (
     <section id="professionals" aria-label="Contractor registration">
-
-      {/* Left: info panel */}
       <div className="sticky-info" aria-label="About ProServices">
-
         <div
           className="section-label"
           style={{
@@ -385,7 +386,6 @@ export default function Professionals({ onOpenPrivacy }) {
         <div className="feature-list">
           {FEATURES.map((f) => (
             <div key={f.title} className="feature-item">
-              {/* FIXED: Changed <h4> to <h3> to maintain heading level hierarchy under <h2> */}
               <h2>{f.title}</h2>
               <p>{f.desc}</p>
             </div>
@@ -393,21 +393,15 @@ export default function Professionals({ onOpenPrivacy }) {
         </div>
       </div>
 
-      {/* Right: form */}
       <div>
         <div className="form-card">
-
-          {/* FIXED: Changed <div> to <h3> so screen readers recognise the section entry header */}
-          <h3 className="form-title">
-            Join Our Network
-          </h3>
+          <h3 className="form-title">Join Our Network</h3>
 
           <div className="account-notice" role="note">
             <p>
               Completing this form creates an <strong>SM Design Floors contractor account</strong> linked
               to your email. Your information is stored securely and used only to match you with
               relevant projects. You may request deletion at any time.{' '}
-
               <button
                 type="button"
                 onClick={handleOpenPrivacy}
@@ -426,7 +420,6 @@ export default function Professionals({ onOpenPrivacy }) {
             </p>
           </div>
 
-          {/* Error banner */}
           {showError && (
             <div
               ref={errorRef}
@@ -451,31 +444,19 @@ export default function Professionals({ onOpenPrivacy }) {
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-
               {errorMsg}
             </div>
           )}
 
-          <form
-            onSubmit={handleSubmit}
-            noValidate
-            aria-label="Contractor registration form"
-          >
-
-            {/* Personal info */}
+          <form onSubmit={handleSubmit} noValidate aria-label="Contractor registration form">
             <fieldset className="form-fieldset">
-              <legend className="form-legend">
-                Personal Information
-              </legend>
-
+              <legend className="form-legend">Personal Information</legend>
               <div className="form-row">
-
                 <div className="form-group">
                   <label htmlFor={fid('name')}>
                     Full Name <span aria-hidden="true">*</span>
                     <span className="sr-only">(required)</span>
                   </label>
-
                   <input
                     id={fid('name')}
                     name="name"
@@ -485,24 +466,11 @@ export default function Professionals({ onOpenPrivacy }) {
                     required
                     maxLength={80}
                     aria-required="true"
-                    aria-invalid={
-                      fieldError === 'name'
-                        ? 'true'
-                        : undefined
-                    }
-                    aria-describedby={
-                      fieldError === 'name'
-                        ? fid('name-err')
-                        : undefined
-                    }
+                    aria-invalid={fieldError === 'name' ? 'true' : undefined}
+                    aria-describedby={fieldError === 'name' ? fid('name-err') : undefined}
                   />
-
                   {fieldError === 'name' && (
-                    <span
-                      id={fid('name-err')}
-                      className="field-error"
-                      role="alert"
-                    >
+                    <span id={fid('name-err')} className="field-error" role="alert">
                       {errorMsg}
                     </span>
                   )}
@@ -513,7 +481,6 @@ export default function Professionals({ onOpenPrivacy }) {
                     Email Address <span aria-hidden="true">*</span>
                     <span className="sr-only">(required)</span>
                   </label>
-
                   <input
                     id={fid('email')}
                     name="email"
@@ -523,38 +490,20 @@ export default function Professionals({ onOpenPrivacy }) {
                     required
                     maxLength={254}
                     aria-required="true"
-                    aria-invalid={
-                      fieldError === 'email'
-                        ? 'true'
-                        : undefined
-                    }
-                    aria-describedby={
-                      fieldError === 'email'
-                        ? fid('email-err')
-                        : undefined
-                    }
+                    aria-invalid={fieldError === 'email' ? 'true' : undefined}
+                    aria-describedby={fieldError === 'email' ? fid('email-err') : undefined}
                   />
-
                   {fieldError === 'email' && (
-                    <span
-                      id={fid('email-err')}
-                      className="field-error"
-                      role="alert"
-                    >
+                    <span id={fid('email-err')} className="field-error" role="alert">
                       {errorMsg}
                     </span>
                   )}
                 </div>
-
               </div>
 
               <div className="form-row">
-
                 <div className="form-group">
-                  <label htmlFor={fid('business')}>
-                    Company / Business
-                  </label>
-
+                  <label htmlFor={fid('business')}>Company / Business</label>
                   <input
                     id={fid('business')}
                     name="business"
@@ -566,10 +515,7 @@ export default function Professionals({ onOpenPrivacy }) {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor={fid('phone')}>
-                    Phone Number
-                  </label>
-
+                  <label htmlFor={fid('phone')}>Phone Number</label>
                   <input
                     id={fid('phone')}
                     name="phone"
@@ -579,69 +525,35 @@ export default function Professionals({ onOpenPrivacy }) {
                     inputMode="tel"
                     value={phone}
                     maxLength={14}
-                    aria-invalid={
-                      fieldError === 'phone'
-                        ? 'true'
-                        : undefined
-                    }
-                    aria-describedby={`${fid('phone-hint')}${fieldError === 'phone'
-                      ? ` ${fid('phone-err')}`
-                      : ''
-                      }`}
-                    onChange={(e) =>
-                      setPhone(formatPhone(e.target.value))
-                    }
+                    aria-invalid={fieldError === 'phone' ? 'true' : undefined}
+                    aria-describedby={`${fid('phone-hint')}${fieldError === 'phone' ? ` ${fid('phone-err')}` : ''}`}
+                    onChange={(e) => setPhone(formatPhone(e.target.value))}
                   />
-
-                  <span
-                    id={fid('phone-hint')}
-                    className="field-hint"
-                  >
-                    Format: (555) 000-0000
-                  </span>
-
+                  <span id={fid('phone-hint')} className="field-hint">Format: (555) 000-0000</span>
                   {fieldError === 'phone' && (
-                    <span
-                      id={fid('phone-err')}
-                      className="field-error"
-                      role="alert"
-                    >
+                    <span id={fid('phone-err')} className="field-error" role="alert">
                       {errorMsg}
                     </span>
                   )}
                 </div>
-
               </div>
             </fieldset>
 
-            {/* Profession */}
             <fieldset className="form-fieldset">
-
               <legend className="form-legend">
                 Profession <span aria-hidden="true">*</span>
-                <span className="sr-only">
-                  (required, select all that apply)
-                </span>
-                <span className="form-legend-hint">
-                  {' '}— select all that apply
-                </span>
+                <span className="sr-only">(required, select all that apply)</span>
+                <span className="form-legend-hint"> — select all that apply</span>
               </legend>
 
               <div
                 className="profession-grid"
                 role="group"
                 aria-required="true"
-                aria-invalid={
-                  fieldError === 'profession'
-                    ? 'true'
-                    : undefined
-                }
+                aria-invalid={fieldError === 'profession' ? 'true' : undefined}
               >
                 {PROFESSIONS.map((prof) => (
-                  <label
-                    key={prof}
-                    className="checkbox-item"
-                  >
+                  <label key={prof} className="checkbox-item">
                     <input
                       type="checkbox"
                       name="profession"
@@ -649,37 +561,23 @@ export default function Professionals({ onOpenPrivacy }) {
                       checked={selectedProfs.includes(prof)}
                       onChange={() => toggleProf(prof)}
                     />
-
                     {prof}
                   </label>
                 ))}
               </div>
 
               {fieldError === 'profession' && (
-                <span
-                  className="field-error"
-                  role="alert"
-                >
+                <span className="field-error" role="alert">
                   {errorMsg}
                 </span>
               )}
-
             </fieldset>
 
-            {/* Experience & location */}
             <fieldset className="form-fieldset">
-
-              <legend className="form-legend">
-                Experience &amp; Location
-              </legend>
-
+              <legend className="form-legend">Experience &amp; Location</legend>
               <div className="form-row">
-
                 <div className="form-group">
-                  <label htmlFor={fid('years_exp')}>
-                    Specialty / Focus Area
-                  </label>
-
+                  <label htmlFor={fid('years_exp')}>Specialty / Focus Area</label>
                   <input
                     id={fid('years_exp')}
                     name="years_exp"
@@ -690,10 +588,7 @@ export default function Professionals({ onOpenPrivacy }) {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor={fid('service_area')}>
-                    City &amp; State
-                  </label>
-
+                  <label htmlFor={fid('service_area')}>City &amp; State</label>
                   <input
                     id={fid('service_area')}
                     name="service_area"
@@ -703,14 +598,10 @@ export default function Professionals({ onOpenPrivacy }) {
                     maxLength={120}
                   />
                 </div>
-
               </div>
 
               <div className="form-group">
-                <label htmlFor={fid('website')}>
-                  Website
-                </label>
-
+                <label htmlFor={fid('website')}>Website</label>
                 <input
                   id={fid('website')}
                   name="website"
@@ -718,235 +609,117 @@ export default function Professionals({ onOpenPrivacy }) {
                   placeholder="https://yourcompany.com"
                   autoComplete="url"
                   maxLength={2048}
-                  aria-invalid={
-                    fieldError === 'website'
-                      ? 'true'
-                      : undefined
-                  }
+                  aria-invalid={fieldError === 'website' ? 'true' : undefined}
                   aria-describedby={fid('website-hint')}
                 />
-
-                <span
-                  id={fid('website-hint')}
-                  className="field-hint"
-                >
-                  Must start with https://
-                </span>
+                <span id={fid('website-hint')} className="field-hint">Must start with https://</span>
               </div>
-
             </fieldset>
 
-            {/* Availability */}
             <fieldset className="form-fieldset">
-
               <legend className="form-legend">
                 Availability to be contacted
-                <span className="form-legend-hint">
-                  {' '}— select all that apply
-                </span>
+                <span className="form-legend-hint"> — select all that apply</span>
               </legend>
 
               <div className="availability-table-wrapper">
-
                 <table className="availability-table">
-
                   <thead>
                     <tr>
-                      <th scope="col">
-                        <span className="sr-only">
-                          Time of day
-                        </span>
-                      </th>
-
+                      <th scope="col"><span className="sr-only">Time of day</span></th>
                       {DAYS.map((day) => (
-                        <th
-                          key={day}
-                          scope="col"
-                        >
-                          {day}
-                        </th>
+                        <th key={day} scope="col">{day}</th>
                       ))}
                     </tr>
                   </thead>
-
                   <tbody>
-
                     {TIMES.map((time) => (
                       <tr key={time}>
-
-                        <th
-                          scope="row"
-                          className="time-label"
-                        >
-                          {time}
-                        </th>
-
+                        <th scope="row" className="time-label">{time}</th>
                         {DAYS.map((day) => (
                           <td key={day}>
-
                             <button
                               type="button"
-                              className={`pill-btn${isActive(day, time)
-                                ? ' pill-btn--active'
-                                : ''
-                                }`}
-                              onClick={() =>
-                                toggleSlot(day, time)
-                              }
+                              className={`pill-btn${isActive(day, time) ? ' pill-btn--active' : ''}`}
+                              onClick={() => toggleSlot(day, time)}
                               aria-pressed={isActive(day, time)}
                               aria-label={`${day} ${time}`}
                             >
-                              {time === 'Morning'
-                                ? 'AM'
-                                : 'PM'}
+                              {time === 'Morning' ? 'AM' : 'PM'}
                             </button>
-
                           </td>
                         ))}
-
                       </tr>
                     ))}
-
                   </tbody>
-
                 </table>
-
               </div>
-
             </fieldset>
 
-            {/* Documents */}
             <fieldset className="form-fieldset">
               <legend className="form-legend">
-                Documents <span className="form-legend-hint">(optional)</span>
+                Professional Files &amp; Credentials <span className="form-legend-hint">(optional, up to 5)</span>
               </legend>
-              <p className="upload-subtext">
-                Upload any documents you’d like to include with your application.
-              </p>
+              <div className="upload-field">
+                <button
+                  type="button"
+                  className="upload-zone"
+                  aria-label="Upload files"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    id={fid('file-input')}
+                    type="file"
+                    multiple
+                    accept=".png,.pdf,.jpeg,.jpg,.doc,.docx"
+                    aria-label="Upload professional files and credentials"
+                    style={{ display: 'none' }}
+                    tabIndex={-1}
+                    onChange={(e) => handleFilesAdded(e.target.files)}
+                  />
+                  <div className="upload-hint">
+                    Click or press Enter to add files ({uploadedFiles.length}/{MAX_FILES})
+                  </div>
+                  <div id={fid('file-hint')} className="upload-meta">
+                    PNG, PDF, JPEG, DOCX · Max 10 MB per file
+                  </div>
+                </button>
 
-              <div className="upload-grid">
-                {[
-                  {
-                    label: 'Resume / Portfolio',
-                    ref: fileInputRef,
-                    state: resumeFile,
-                    setter: setResumeFile,
-                    type: 'resume',
-                    accept: '.pdf,.doc,.docx',
-                    hint: 'PDF, DOC, DOCX — max 10 MB',
-                  },
-                  {
-                    label: 'Certificates / License',
-                    ref: certFileRef,
-                    state: certFile,
-                    setter: setCertFile,
-                    type: 'certificate',
-                    accept: '.pdf,.jpg,.jpeg',
-                    hint: 'PDF, JPG — max 10 MB',
-                  },
-                  {
-                    label: 'Current Insurance',
-                    ref: insuranceFileRef,
-                    state: insuranceFile,
-                    setter: setInsuranceFile,
-                    type: 'insurance',
-                    accept: '.pdf,.jpg,.jpeg',
-                    hint: 'PDF, JPG — max 10 MB',
-                  },
-                ].map(({ label, ref, state, setter, type, accept, hint }) => {
-                  const btnId = fid(`upload-${type}`);
-
-                  return (
-                    <div key={type} className={`upload-card ${state ? 'has-file' : ''}`}>
-                      <div className="upload-card-header">
-                        <span className="upload-card-title">{label}</span>
-                      </div>
-
-                      {/* Hidden File Input */}
-                      <input
-                        type="file"
-                        ref={ref}
-                        id={btnId}
-                        accept={accept}
-                        aria-label={`Upload ${label}`}
-                        className="file-input-hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            setter(e.target.files[0]);
-                          }
-                        }}
-                      />
-
-                      {/* Card Body */}
-                      {state ? (
-                        <div className="uploaded-file-card">
-                          <div className="file-info-group">
-                            <div className="file-icon-badge">
-                              <svg width="20" height="24" viewBox="0 0 24 24" fill="none" stroke="#d9534f" strokeWidth="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                              </svg>
-                            </div>
-                            <div className="file-details">
-                              <span className="file-name" title={state.name}>
-                                {state.name}
-                              </span>
-                              <span className="file-meta-size">
-                                {state.type.includes('pdf') ? 'PDF' : 'DOC'} • {(state.size / 1024).toFixed(0)} KB
-                              </span>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            className="file-remove-circle"
-                            onClick={() => removeFile(setter, ref)}
-                            aria-label={`Remove ${state.name}`}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : (
+                {uploadedFiles.length > 0 && (
+                  <div
+                    className="uploaded-file-list"
+                    style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}
+                  >
+                    {uploadedFiles.map((file, idx) => (
+                      <div key={`${file.name}-${idx}`} className="file-pill">
+                        <span className="file-pill-name">{file.name}</span>
                         <button
                           type="button"
-                          className="upload-dashed-zone"
-                          onClick={() => ref.current?.click()}
+                          className="file-remove-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile(idx);
+                          }}
+                          aria-label={`Remove ${file.name}`}
                         >
-                          <svg className="cloud-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" strokeWidth="1.5">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
-                          </svg>
-                          <div className="zone-text">
-                            <strong>Click or press Enter to upload</strong>
-                          </div>
+                          ×
                         </button>
-                      )}
-
-                      <div className="upload-card-footer">{hint}</div>
-                    </div>
-                  );
-                })}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </fieldset>
 
-            {/* Password */}
             <fieldset className="form-fieldset password-section">
-
-              <legend className="form-legend password-section-label">
-                Create Your Account Password
-              </legend>
-
+              <legend className="form-legend password-section-label">Create Your Account Password</legend>
               <div className="form-row">
-
                 <div className="form-group">
-
                   <label htmlFor={fid('password')}>
                     Password <span aria-hidden="true">*</span>
-                    <span className="sr-only">
-                      (required)
-                    </span>
+                    <span className="sr-only">(required)</span>
                   </label>
-
                   <input
                     id={fid('password')}
                     name="password"
@@ -957,36 +730,18 @@ export default function Professionals({ onOpenPrivacy }) {
                     required
                     minLength={8}
                     aria-required="true"
-                    aria-invalid={
-                      fieldError === 'password'
-                        ? 'true'
-                        : undefined
-                    }
-                    aria-describedby={`${fid('pw-hint')}${fieldError === 'password'
-                      ? ` ${fid('pw-err')}`
-                      : ''
-                      }`}
+                    aria-invalid={fieldError === 'password' ? 'true' : undefined}
+                    aria-describedby={`${fid('pw-hint')}${fieldError === 'password' ? ` ${fid('pw-err')}` : ''}`}
                     onChange={(e) => {
                       setPassword(e.target.value);
-                      setPwStrength(
-                        calcStrength(e.target.value)
-                      );
+                      setPwStrength(calcStrength(e.target.value));
                     }}
                   />
-
-                  <span
-                    id={fid('pw-hint')}
-                    className="field-hint"
-                  >
+                  <span id={fid('pw-hint')} className="field-hint">
                     Min 8 characters, 1 uppercase, 1 number
                   </span>
-
                   {password.length > 0 && (
-                    <div
-                      className="pw-strength"
-                      aria-live="polite"
-                      aria-atomic="true"
-                    >
+                    <div className="pw-strength" aria-live="polite" aria-atomic="true">
                       <div className="pw-strength-bar">
                         <div
                           className="pw-strength-fill"
@@ -996,18 +751,11 @@ export default function Professionals({ onOpenPrivacy }) {
                           }}
                         />
                       </div>
-                      <span className="pw-strength-label">
-                        {STRENGTH_LABELS[pwStrength]}
-                      </span>
+                      <span className="pw-strength-label">{STRENGTH_LABELS[pwStrength]}</span>
                     </div>
                   )}
-
                   {fieldError === 'password' && (
-                    <span
-                      id={fid('pw-err')}
-                      className="field-error"
-                      role="alert"
-                    >
+                    <span id={fid('pw-err')} className="field-error" role="alert">
                       {errorMsg}
                     </span>
                   )}
@@ -1018,7 +766,6 @@ export default function Professionals({ onOpenPrivacy }) {
                     Confirm Password <span aria-hidden="true">*</span>
                     <span className="sr-only">(required)</span>
                   </label>
-
                   <input
                     id={fid('confirmPassword')}
                     name="confirmPassword"
@@ -1029,34 +776,20 @@ export default function Professionals({ onOpenPrivacy }) {
                     required
                     minLength={8}
                     aria-required="true"
-                    aria-invalid={
-                      fieldError === 'confirmPassword'
-                        ? 'true'
-                        : undefined
-                    }
+                    aria-invalid={fieldError === 'confirmPassword' ? 'true' : undefined}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                   />
-
                   {fieldError === 'confirmPassword' && (
-                    <span
-                      id={fid('confirmPassword-err')}
-                      className="field-error"
-                      role="alert"
-                    >
+                    <span id={fid('confirmPassword-err')} className="field-error" role="alert">
                       {errorMsg}
                     </span>
                   )}
                 </div>
-
               </div>
             </fieldset>
 
-            {/* Notes */}
             <fieldset className="form-fieldset">
-              <legend className="form-legend">
-                Additional Notes
-              </legend>
-
+              <legend className="form-legend">Additional Notes</legend>
               <div className="form-group">
                 <textarea
                   id="additional-info"
@@ -1069,7 +802,6 @@ export default function Professionals({ onOpenPrivacy }) {
               </div>
             </fieldset>
 
-            {/* Submit */}
             <button
               ref={submitButtonRef}
               type="submit"
@@ -1099,8 +831,7 @@ export default function Professionals({ onOpenPrivacy }) {
           </form>
         </div>
       </div>
-      {/* Success Modal */}
-      {/* Success Modal */}
+
       <div
         className={`modal-overlay ${showSuccessModal ? 'visible' : ''}`}
         style={{ display: showSuccessModal ? 'flex' : 'none' }}
@@ -1130,11 +861,9 @@ export default function Professionals({ onOpenPrivacy }) {
         </FocusTrap>
       </div>
 
-      {/* Local Privacy Modal Fallback */}
       {showLocalPrivacyModal && (
         <PrivacyModal onClose={() => setShowLocalPrivacyModal(false)} />
       )}
-
     </section>
   );
 }

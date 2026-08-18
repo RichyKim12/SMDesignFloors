@@ -30,6 +30,34 @@ const SORT_OPTIONS = [
   { value: 'name_za', label: 'Name Z–A' },
 ];
 
+const EXT_STYLES = {
+  PDF: { bg: 'rgba(200, 74, 74, 0.12)', color: '#a82424' },
+  DOC: { bg: 'rgba(74, 127, 181, 0.12)', color: '#4a7fb5' },
+  DOCX: { bg: 'rgba(74, 127, 181, 0.12)', color: '#4a7fb5' },
+  PNG: { bg: 'rgba(45, 138, 94, 0.12)', color: '#2d8a5e' },
+  JPG: { bg: 'rgba(45, 138, 94, 0.12)', color: '#2d8a5e' },
+  JPEG: { bg: 'rgba(45, 138, 94, 0.12)', color: '#2d8a5e' },
+  default: { bg: 'rgba(120, 83, 52, 0.12)', color: '#785334' },
+};
+
+function getFileExt(fileName = '') {
+  const parts = String(fileName || '').split('.');
+  return parts.length > 1 ? parts.pop().toUpperCase() : '';
+}
+
+function formatFileDate(dateStr) {
+  if (!dateStr) return '';
+  try {
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return '';
+  }
+}
+
 // Helper to generate temporary signed URLs for private storage buckets
 const getSignedFileUrl = async (filePath, defaultBucket = 'submissions-files') => {
   if (!filePath) return '#';
@@ -48,7 +76,7 @@ const getSignedFileUrl = async (filePath, defaultBucket = 'submissions-files') =
 
   const { data, error } = await supabase.storage
     .from(bucket)
-    .createSignedUrl(cleanPath, 3600); // 1 hour validity
+    .createSignedUrl(cleanPath, 3600, {download:true}); // 1 hour validity
 
   if (error) {
     console.error(`Error generating signed URL for ${bucket}/${cleanPath}:`, error);
@@ -58,8 +86,75 @@ const getSignedFileUrl = async (filePath, defaultBucket = 'submissions-files') =
   return data?.signedUrl || '#';
 };
 
-// Reusable component to render asynchronous file attachment links
-function SignedFileLink({ filePath, defaultBucket, fileName }) {
+// Injected once; scoped by class name so it's safe alongside the rest of admin-dashboard.css
+const FileCardStyles = () => (
+  <style>{`
+    .adm-doc-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .adm-doc-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: #fff;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+      transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+      text-decoration: none;
+    }
+    .adm-doc-card:hover {
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      transform: translateY(-1px);
+      border-color: rgba(0, 0, 0, 0.15);
+    }
+    .adm-doc-card.is-disabled {
+      opacity: 0.6;
+      cursor: default;
+      pointer-events: none;
+    }
+    .adm-doc-badge {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .adm-doc-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .adm-doc-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .adm-doc-meta {
+      font-size: 0.76rem;
+      color: #888;
+      margin-top: 1px;
+    }
+  `}</style>
+);
+
+// Reusable component to render asynchronous file attachment links.
+// fileType / uploadedAt are optional — used when available (contractor docs)
+// but the component degrades gracefully without them (job attachments).
+function SignedFileLink({ filePath, defaultBucket, fileName, fileType, uploadedAt }) {
   const [url, setUrl] = useState('#');
   const [loading, setLoading] = useState(true);
 
@@ -81,26 +176,26 @@ function SignedFileLink({ filePath, defaultBucket, fileName }) {
     return () => { isMounted = false; };
   }, [filePath, defaultBucket]);
 
-  if (loading) {
-    return <span style={{ fontSize: '0.8125rem', color: '#888' }}>⏳ Loading file…</span>;
-  }
+  const ext = getFileExt(fileName);
+  const extStyle = EXT_STYLES[ext] || EXT_STYLES.default;
+  const metaParts = [fileType, uploadedAt ? `Uploaded ${formatFileDate(uploadedAt)}` : null].filter(Boolean);
 
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      style={{
-        color: '#4a7fb5',
-        textDecoration: 'underline',
-        fontSize: '0.875rem',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        wordBreak: 'break-all'
-      }}
+      className={`adm-doc-card ${loading ? 'is-disabled' : ''}`}
     >
-      📎 {fileName || 'View Attachment'}
+      <div className="adm-doc-badge" style={{ background: extStyle.bg, color: extStyle.color }}>
+        {ext || 'FILE'}
+      </div>
+      <div className="adm-doc-info">
+        <div className="adm-doc-name">{fileName || 'Document'}</div>
+        <div className="adm-doc-meta">
+          {loading ? 'Loading…' : (metaParts.join(' · ') || 'Click to view')}
+        </div>
+      </div>
     </a>
   );
 }
@@ -259,7 +354,7 @@ export default function AdminDashboard() {
 
     // Fetch files independently to protect against missing DB foreign key constraints
     const { data: filesData } = await supabase
-      .from('professional_submissions_files')
+      .from('professional_submission_files')
       .select('*');
 
     const mappedContractors = (contractorData || []).map(c => {
@@ -477,6 +572,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-root">
+      <FileCardStyles />
 
       {/* Sidebar */}
       <aside className="admin-sidebar">
@@ -766,7 +862,7 @@ export default function AdminDashboard() {
                           <div className="detail-section-label">
                             Attached Files ({selectedJob.contact_submission_files.length})
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                          <div className="adm-doc-list" style={{ marginTop: '8px' }}>
                             {selectedJob.contact_submission_files.map(file => (
                               <SignedFileLink
                                 key={file.id || file.file_path}
@@ -1077,13 +1173,15 @@ export default function AdminDashboard() {
                           <div className="detail-section-label">
                             Uploaded Documents &amp; Licenses ({selectedContractor.professional_submissions_files.length})
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                          <div className="adm-doc-list" style={{ marginTop: '8px' }}>
                             {selectedContractor.professional_submissions_files.map(file => (
                               <SignedFileLink
                                 key={file.id || file.file_path}
                                 filePath={file.file_path}
-                                defaultBucket="contractor-documents"
-                                fileName={`${file.file_name || 'Document'} ${file.file_type ? `(${file.file_type})` : ''}`}
+                                defaultBucket="submissions-files"
+                                fileName={file.file_name || 'Document'}
+                                fileType={file.file_type}
+                                uploadedAt={file.created_at}
                               />
                             ))}
                           </div>
