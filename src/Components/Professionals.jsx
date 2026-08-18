@@ -1,5 +1,5 @@
 import { useState, useRef, useId, useEffect } from 'react';
-import FocusTrap from 'focus-trap-react';
+import { FocusTrap } from 'focus-trap-react';
 import './Professionals.css';
 import PrivacyModal from './PrivacyModal';
 import { supabase } from '../lib/supabase';
@@ -185,19 +185,19 @@ export default function Professionals({ onOpenPrivacy }) {
       return;
     }
 
+    // 1. Check file size and declared MIME type
     const mimeCheck = validateFile(file, fileType);
-
     if (!mimeCheck.valid) {
       showErr(mimeCheck.message);
       return;
     }
 
+    // 2. Inspect magic bytes to prevent renamed malicious files
     const magicOk = await verifyFileMagic(file);
-
     if (!magicOk) {
       showErr(
         `${file.name} does not appear to be a valid document. ` +
-        `Please upload a genuine PDF, JPG, DOC, or DOCX file.`
+        `Please upload a genuine PDF, JPG, or DOC file.`
       );
       return;
     }
@@ -221,8 +221,8 @@ export default function Professionals({ onOpenPrivacy }) {
     setShowError(false);
     setFieldError('');
 
-    const rateCheck = checkRateLimit('professional-registration');
-
+    // 1. Client-side rate limiting check
+    const rateCheck = checkRateLimit();
     if (!rateCheck.allowed) {
       showErr(
         `Too many attempts. Please try again in ${formatRetryTime(rateCheck.retryAfterMs)}.`
@@ -233,13 +233,14 @@ export default function Professionals({ onOpenPrivacy }) {
     const formEl = e.currentTarget;
     const rawData = new FormData(formEl);
 
+    // 2. Strict sanitization layer
     const rawEmail = sanitizeEmail(rawData.get('email') || '');
-    const rawName = sanitizeText(rawData.get('name') || '');
-    const rawBusiness = sanitizeText(rawData.get('business') || '');
-    const rawYearsExp = sanitizeText(rawData.get('years_exp') || '');
-    const rawServiceArea = sanitizeText(rawData.get('service_area') || '');
+    const rawName = sanitizeText(rawData.get('name') || '', { maxLength: 80 });
+    const rawBusiness = sanitizeText(rawData.get('business') || '', { maxLength: 120 });
+    const rawYearsExp = sanitizeText(rawData.get('years_exp') || '', { maxLength: 120 });
+    const rawServiceArea = sanitizeText(rawData.get('service_area') || '', { maxLength: 120 });
     const rawWebsite = sanitizeUrl(rawData.get('website') || '');
-    const rawNotes = sanitizeNotes(rawData.get('notes') || '');
+    const rawNotes = sanitizeNotes(rawData.get('notes') || '', { maxLength: 1000 });
     const cleanPhoneVal = sanitizePhone(phone);
 
     const formDataPayload = {
@@ -257,8 +258,8 @@ export default function Professionals({ onOpenPrivacy }) {
       confirmPassword,
     };
 
+    // 3. Strict regex schema validation
     const validation = validateForm(formDataPayload);
-
     if (!validation.valid) {
       showErr(validation.message, validation.field);
       return;
@@ -267,20 +268,14 @@ export default function Professionals({ onOpenPrivacy }) {
     setLoading(true);
 
     try {
+      // 4. Secure document uploads to Supabase storage
       const [resumePath, certPath, insurancePath] = await Promise.all([
-        resumeFile
-          ? uploadDocument(resumeFile, 'resume', rawEmail)
-          : Promise.resolve(null),
-
-        certFile
-          ? uploadDocument(certFile, 'certificate', rawEmail)
-          : Promise.resolve(null),
-
-        insuranceFile
-          ? uploadDocument(insuranceFile, 'insurance', rawEmail)
-          : Promise.resolve(null),
+        resumeFile ? uploadDocument(resumeFile, 'resume', rawEmail) : Promise.resolve(null),
+        certFile ? uploadDocument(certFile, 'certificate', rawEmail) : Promise.resolve(null),
+        insuranceFile ? uploadDocument(insuranceFile, 'insurance', rawEmail) : Promise.resolve(null),
       ]);
 
+      // 5. Supabase Auth Signup
       const { data, error } = await supabase.auth.signUp({
         email: rawEmail,
         password: password,
@@ -305,12 +300,10 @@ export default function Professionals({ onOpenPrivacy }) {
       if (error) throw error;
 
       if (!data.session) {
-        const { error: signInErr } =
-          await supabase.auth.signInWithPassword({
-            email: rawEmail,
-            password: password,
-          });
-
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: rawEmail,
+          password: password,
+        });
         if (signInErr) throw signInErr;
       }
 
@@ -319,6 +312,7 @@ export default function Professionals({ onOpenPrivacy }) {
     } catch (err) {
       console.error('Submission error:', err);
 
+      // 6. Prevent user enumeration leak via error normalization
       showErr(
         normalizeAuthError(err) ||
         'An error occurred during registration. Please try again.'
@@ -1079,14 +1073,68 @@ export default function Professionals({ onOpenPrivacy }) {
             <button
               ref={submitButtonRef}
               type="submit"
-              className="submit-btn"
+              className="form-submit btn-primary"
               disabled={loading}
             >
               {loading ? 'Submitting...' : 'Register'}
             </button>
+            <p className="form-disclaimer">
+              By submitting you agree to create an SM Design Floors contractor account and consent to us storing your information solely for the purpose of matching you with relevant projects. We will never sell your data.{' '}
+              <button
+                type="button"
+                onClick={handleOpenPrivacy}
+                className="form-legal-link"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  font: 'inherit',
+                }}
+              >
+                Privacy Policy
+              </button>
+            </p>
           </form>
         </div>
       </div>
+      {/* Success Modal */}
+      {/* Success Modal */}
+      <div
+        className={`modal-overlay ${showSuccessModal ? 'visible' : ''}`}
+        style={{ display: showSuccessModal ? 'flex' : 'none' }}
+      >
+        <FocusTrap active={showSuccessModal}>
+          <div className="modal-content" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+            <h3 id="modal-title">Registration Complete!</h3>
+            <p>Your contractor account has been created. You can now access your contractor portal or close this window.</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleNavigateDashboard}
+                autoFocus
+              >
+                Go to Contractor Portal
+              </button>
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={handleSuccessModalClose}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </FocusTrap>
+      </div>
+
+      {/* Local Privacy Modal Fallback */}
+      {showLocalPrivacyModal && (
+        <PrivacyModal onClose={() => setShowLocalPrivacyModal(false)} />
+      )}
+
     </section>
   );
 }

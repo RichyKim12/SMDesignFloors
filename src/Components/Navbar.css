@@ -86,7 +86,7 @@ nav button:focus-visible {
 /* Visualizer & Dashboard buttons */
 .nav-dashboard-btn,
 .nav-visualizer-btn {
-  background: var(--cream);
+  background: var(--dark);
   color: var(--tan-dark);
   border: none;
   padding: 9px 20px;

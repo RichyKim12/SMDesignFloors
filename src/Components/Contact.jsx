@@ -22,6 +22,24 @@ const SERVICES_NEEDED = [
   'Kitchen Remodel',
   'Other',
 ];
+
+// Whitelist of allowed values to prevent tampering via DevTools
+const ALLOWED_SERVICES = new Set(SERVICES_NEEDED);
+const ALLOWED_BUDGETS = new Set([
+  'Under $2,000',
+  '$2,000 – $5,000',
+  '$5,000 – $10,000',
+  '$10,000 – $25,000',
+  '$25,000+',
+]);
+const ALLOWED_TIMELINES = new Set([
+  'ASAP',
+  'Within 1 month',
+  '1–3 months',
+  '3–6 months',
+  'Flexible / Planning stage',
+]);
+
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TIMES = ['Morning', 'Afternoon'];
 const CONTACT_DETAILS = [
@@ -29,6 +47,10 @@ const CONTACT_DETAILS = [
   { title: 'Service Area', body: 'Proudly Serving Northern Virginia, Maryland, and Greater Washington DC Area' },
   { title: 'Business Hours', body: <>Monday – Saturday: 10:00 AM – 6:00 PM<br />Sunday: Closed</> },
 ];
+
+const EMAIL_RE = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+const NAME_RE  = /^[a-zA-Z\u00C0-\u024F'\- ]{2,80}$/;
+const PHONE_RE = /^\(\d{3}\)\s\d{3}-\d{4}$/;
 
 function formatPhone(val) {
   const digits = val.replace(/\D/g, '').slice(0, 10);
@@ -84,7 +106,7 @@ export default function Contact() {
 
     const validFiles = [];
     for (const file of incoming) {
-      const mimeCheck = validateFile(file, 'floorplan');
+      const mimeCheck = validateFile(file, 'resume'); // uses general document whitelist
       if (!mimeCheck.valid) {
         showErr(mimeCheck.message);
         return;
@@ -141,6 +163,7 @@ export default function Contact() {
     setShowError(false);
     setShowSuccess(false);
 
+    // 1. Rate Limit Check
     const rate = checkRateLimit();
     if (!rate.allowed) {
       showErr(`Too many attempts. Please wait ${formatRetryTime(rate.retryAfterMs)} before trying again.`);
@@ -150,17 +173,49 @@ export default function Contact() {
     setLoading(true);
     const form = e.target;
 
+    // 2. Sanitization Layer
     const name = sanitizeText(form.name.value, { maxLength: 80 });
     const email = sanitizeEmail(form.email.value);
     const cleanPhone = sanitizePhone(phone);
-    const budget = sanitizeText(form.budget.value, { maxLength: 60 });
-    const timeline = sanitizeText(form.timeline.value, { maxLength: 60 });
+    const rawBudget = form.budget.value;
+    const rawTimeline = form.timeline.value;
     const projectDesc = sanitizeNotes(form.project_desc.value, { maxLength: 2000 });
 
-    if (!name) { showErr('Please enter your name.'); return; }
-    if (!email) { showErr('Please enter a valid email address.'); return; }
-    if (!projectDesc) { showErr('Please describe your project.'); return; }
+    // 3. Regex & Pattern Validation
+    if (!NAME_RE.test(name)) {
+      showErr('Name may only contain letters, spaces, hyphens, and apostrophes (2–80 characters).');
+      return;
+    }
+    if (!EMAIL_RE.test(email)) {
+      showErr('Please enter a valid email address.');
+      return;
+    }
+    if (cleanPhone && !PHONE_RE.test(cleanPhone)) {
+      showErr('Phone must be in (555) 000-0000 format.');
+      return;
+    }
 
+    // 4. Dropdown Whitelist Validation (prevents injection via DevTools inspection changes)
+    const budget = ALLOWED_BUDGETS.has(rawBudget) ? rawBudget : null;
+    const timeline = ALLOWED_TIMELINES.has(rawTimeline) ? rawTimeline : null;
+
+    if (!selectedServices || selectedServices.length === 0) {
+      showErr('Please select at least one service needed.');
+      return;
+    }
+    for (const svc of selectedServices) {
+      if (!ALLOWED_SERVICES.has(svc)) {
+        showErr('Invalid service selection detected.');
+        return;
+      }
+    }
+
+    if (!projectDesc) {
+      showErr('Please describe your project.');
+      return;
+    }
+
+    // 5. Database Insertion
     const submissionId = crypto.randomUUID();
     const { error } = await supabase
       .from('contact_submissions')
@@ -169,8 +224,8 @@ export default function Contact() {
         name,
         email,
         phone: cleanPhone || null,
-        budget: budget || null,
-        timeline: timeline || null,
+        budget,
+        timeline,
         services: selectedServices,
         availability,
         project_desc: projectDesc,
@@ -191,7 +246,7 @@ export default function Contact() {
     setUploadedFiles([]);
     setPhone('');
     form.reset();
-    setTimeout(() => setShowSuccess(false), 5000);
+    setTimeout(() => setShowSuccess(false), 50000);
   };
 
   return (

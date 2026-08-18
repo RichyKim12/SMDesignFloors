@@ -243,7 +243,6 @@ export default function Portfolio() {
       Object.entries(files).map(([path, src]) => {
         // Fallback check matching both standard relative path or cleaned path
         const meta = imageMeta[path] || {};
-        console.log(meta);
         return {
           id: path,
           src,
