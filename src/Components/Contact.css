@@ -1,9 +1,40 @@
+/* GLOBAL PLACEHOLDERS (Fixes low-contrast placeholders across all inputs/textareas) */
+::placeholder {
+  color: #666;
+  opacity: 1;
+}
+::-webkit-input-placeholder {
+  color: #666;
+  opacity: 1;
+}
+::-moz-placeholder {
+  color: #666;
+  opacity: 1;
+}
+:-ms-input-placeholder {
+  color: #666;
+  opacity: 1;
+}
+
 #contact {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   gap: clamp(32px, 5vw, 80px);
   align-items: start;
   padding: 120px 60px;
+}
+
+/* Screen-reader-only text — visually hidden, still announced by assistive tech */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* FORM */
@@ -13,41 +44,83 @@
   border-radius: 12px;
   border: 1px solid #eee;
 }
-
 .form-title {
   font-size: 1.5rem;
   margin-bottom: 20px;
   font-weight: 500;
 }
-
 .form-row {
   display: flex;
   gap: 20px;
 }
-
 .form-group {
   flex: 1;
   display: flex;
   flex-direction: column;
   margin-bottom: 16px;
 }
-
 .form-group label {
   font-size: 0.85rem;
   margin-bottom: 6px;
+  color: #222; /* High contrast for labels */
+  font-weight: 500;
 }
-
 .form-group input,
 .form-group select,
 .form-group textarea {
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 0.9rem;
+  color: #111; /* Ensure typed text is high contrast */
 }
-
+.form-group input:focus-visible,
+.form-group select:focus-visible,
+.form-group textarea:focus-visible {
+  outline: 2px solid #8b5e3c;
+  outline-offset: 1px;
+}
 textarea {
   min-height: 120px;
+}
+
+/* FIELDSETS */
+.form-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 20px;
+}
+.form-legend {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 10px;
+  padding: 0;
+  color: #222;
+}
+.form-legend-hint,
+.field-hint {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #555; /* Darkened for accessibility */
+  margin-top: 4px;
+}
+
+/* ERROR BANNER */
+.form-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fbe5e2;
+  color: #a8281a;
+  border-left: 3px solid #a8281a;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 16px;
+}
+.form-error-banner:focus-visible {
+  outline: 2px solid #a8281a;
+  outline-offset: 2px;
 }
 
 /* SERVICES GRID */
@@ -68,35 +141,30 @@ textarea {
   overflow-x: auto;
   padding: 14px 16px;
 }
-
 .availability-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
 }
-
 .availability-table th {
   font-size: 0.78rem;
-  font-weight: 500;
-  color: #888;
+  font-weight: 600;
+  color: #444; /* High contrast */
   text-align: center;
   padding: 0 4px 10px;
 }
-
 .availability-table th:first-child {
   text-align: left;
   width: 84px;
 }
-
 .availability-table td {
   text-align: center;
   padding: 4px;
 }
-
 .time-label {
   font-size: 0.78rem;
-  font-weight: 500;
-  color: #888;
+  font-weight: 600;
+  color: #444; /* High contrast */
   text-align: left !important;
   padding-left: 0 !important;
   white-space: nowrap;
@@ -104,61 +172,155 @@ textarea {
 
 /* PILL BUTTONS */
 .pill-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 6px 0;
-  font-size: 0.75rem;
+  padding: 8px 0;
+  font-size: 0.78rem;
   font-family: inherit;
-  border: 1px solid #ddd;
+  border: 1px solid #bbb;
   border-radius: 20px;
   background: white;
-  color: #999;
+  color: #333; /* Darkened text for readability */
+  font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-
 .pill-btn:hover {
   border-color: #8b5e3c;
   color: #8b5e3c;
 }
-
+.pill-btn:focus-visible {
+  outline: 2px solid #8b5e3c;
+  outline-offset: 2px;
+}
 .pill-btn--active {
   background: #8b5e3c;
   border-color: #8b5e3c;
   color: white;
 }
 
-/* UPLOAD ZONE */
+/* UPLOAD ZONE & ENLARGED FILE PILLS */
 .upload-zone {
-  border: 1px dashed #c4a882;
+  border: 1.5px dashed #b08d65;
   background: #fdf8f2;
-  padding: 14px 10px;
+  padding: 16px 14px;
   text-align: center;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
+  min-height: 80px;
   box-sizing: border-box;
+  transition: border-color 0.2s, background-color 0.2s;
 }
-.upload-zone:hover { border-color: #8b5e3c; }
-.upload-zone .upload-hint { font-size: 0.8rem; color: #888; font-weight: 300; }
-.upload-zone .upload-meta { font-size: 0.7rem; color: #bbb; }
+.upload-zone:hover { 
+  border-color: #8b5e3c; 
+  background: #f9f1e6;
+}
+.upload-zone:focus-visible {
+  outline: 2px solid #8b5e3c;
+  outline-offset: 2px;
+}
+.upload-zone .upload-hint { 
+  font-size: 0.88rem; 
+  color: #222; 
+  font-weight: 600; 
+} 
+.upload-zone .upload-meta { 
+  font-size: 0.78rem; 
+  color: #555; 
+  font-weight: 500; 
+} 
 
+/* ATTACHED FILE PILLS */
+.file-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  list-style: none;
+  padding: 0;
+}
+
+.file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #f4ede4;
+  border: 1px solid #8b5e3c;
+  border-radius: 24px;
+  padding: 8px 12px 8px 16px;
+  min-height: 44px; /* WCAG SC 2.5.8 Minimum Touch Target */
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.file-pill-name {
+  font-size: 0.85rem;
+  color: #1a1a1a;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.file-pill-size {
+  font-size: 0.75rem;
+  color: #555;
+  font-weight: 500;
+}
+
+/* FILE REMOVE BUTTON */
+.file-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;  /* Meets and exceeds 24px minimum requirement */
+  min-height: 28px; /* Meets and exceeds 24px minimum requirement */
+  border: none;
+  background: rgba(139, 94, 60, 0.12);
+  color: #5c3a21;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.18s, color 0.18s;
+}
+
+.file-remove-btn:hover {
+  background: #8b5e3c;
+  color: #ffffff;
+}
+
+.file-remove-btn:focus-visible {
+  outline: 2px solid #5c3a21;
+  outline-offset: 2px;
+}
 
 .checkbox-item {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
+  color: #222;
   cursor: pointer;
 }
-
+.checkbox-item input[type="checkbox"]:focus-visible {
+  outline: 2px solid #8b5e3c;
+  outline-offset: 2px;
+}
 .small-note {
-  font-size: 0.65rem;
-  opacity: 0.7;
+  font-size: 0.7rem;
+  color: #555; /* Removed low contrast opacity */
 }
 
 /* BUTTON */
@@ -170,54 +332,71 @@ textarea {
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  width: 100%;
+  font-weight: 600;
+}
+.form-submit:focus-visible {
+  outline: 2px solid #3a3020;
+  outline-offset: 2px;
+}
+.form-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* SUCCESS */
 .success-banner {
   margin-top: 12px;
   background: #e6f4ea;
+  color: #1e4d2b;
   padding: 10px;
   border-radius: 6px;
   display: none;
+  font-size: 1rem;
 }
-
 .success-banner.show {
   display: block;
 }
 
 /* RIGHT SIDE */
-.section-title {
-  font-size: 2.2rem;
-  margin-bottom: 16px;
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 1000;
+  color: #785334; /* Raised contrast for compliance (~4.8:1) */
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
+/* Fix "Project" italic heading accent contrast */
+.section-title em {
+  color: #785334; /* High-contrast warm bronze (~4.8:1) */
+  font-style: italic;
+}
 .section-desc {
   font-size: 1rem;
-  color: #666;
+  color: #444; /* Darkened for compliance */
   margin-bottom: 24px;
+  line-height: 1.5;
 }
-
 .contact-detail {
   margin-top: 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
-
 .contact-item {
   padding-left: 14px;
   border-left: 2px solid #8b5e3c;
 }
-
-.contact-item h4 {
+.contact-item h3 {
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 3px;
+  color: #1a1a1a;
 }
-
 .contact-item p {
   font-size: 0.85rem;
-  color: #666;
+  color: #444; /* Darkened for compliance */
   line-height: 1.6;
   margin: 0;
 }
@@ -228,15 +407,12 @@ textarea {
     grid-template-columns: 1fr;
     padding: 72px 24px;
   }
-
   .form-row {
     flex-direction: column;
   }
-
   .service-grid {
     grid-template-columns: 1fr;
   }
-
   .availability-table th:first-child {
     width: 68px;
   }

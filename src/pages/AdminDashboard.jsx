@@ -30,6 +30,176 @@ const SORT_OPTIONS = [
   { value: 'name_za', label: 'Name Z–A' },
 ];
 
+const EXT_STYLES = {
+  PDF: { bg: 'rgba(200, 74, 74, 0.12)', color: '#a82424' },
+  DOC: { bg: 'rgba(74, 127, 181, 0.12)', color: '#4a7fb5' },
+  DOCX: { bg: 'rgba(74, 127, 181, 0.12)', color: '#4a7fb5' },
+  PNG: { bg: 'rgba(45, 138, 94, 0.12)', color: '#2d8a5e' },
+  JPG: { bg: 'rgba(45, 138, 94, 0.12)', color: '#2d8a5e' },
+  JPEG: { bg: 'rgba(45, 138, 94, 0.12)', color: '#2d8a5e' },
+  default: { bg: 'rgba(120, 83, 52, 0.12)', color: '#785334' },
+};
+
+function getFileExt(fileName = '') {
+  const parts = String(fileName || '').split('.');
+  return parts.length > 1 ? parts.pop().toUpperCase() : '';
+}
+
+function formatFileDate(dateStr) {
+  if (!dateStr) return '';
+  try {
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return '';
+  }
+}
+
+// Helper to generate temporary signed URLs for private storage buckets
+const getSignedFileUrl = async (filePath, defaultBucket = 'submissions-files') => {
+  if (!filePath) return '#';
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
+
+  let cleanPath = filePath.replace(/^\/+/, '');
+  let bucket = defaultBucket;
+
+  if (cleanPath.startsWith('submissions-files/')) {
+    bucket = 'submissions-files';
+    cleanPath = cleanPath.replace(/^submissions-files\//, '');
+  } else if (cleanPath.startsWith('contractor-documents/')) {
+    bucket = 'contractor-documents';
+    cleanPath = cleanPath.replace(/^contractor-documents\//, '');
+  }
+
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(cleanPath, 3600, {download:true}); // 1 hour validity
+
+  if (error) {
+    console.error(`Error generating signed URL for ${bucket}/${cleanPath}:`, error);
+    return '#';
+  }
+
+  return data?.signedUrl || '#';
+};
+
+// Injected once; scoped by class name so it's safe alongside the rest of admin-dashboard.css
+const FileCardStyles = () => (
+  <style>{`
+    .adm-doc-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .adm-doc-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: #fff;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+      transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+      text-decoration: none;
+    }
+    .adm-doc-card:hover {
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      transform: translateY(-1px);
+      border-color: rgba(0, 0, 0, 0.15);
+    }
+    .adm-doc-card.is-disabled {
+      opacity: 0.6;
+      cursor: default;
+      pointer-events: none;
+    }
+    .adm-doc-badge {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .adm-doc-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .adm-doc-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .adm-doc-meta {
+      font-size: 0.76rem;
+      color: #888;
+      margin-top: 1px;
+    }
+  `}</style>
+);
+
+// Reusable component to render asynchronous file attachment links.
+// fileType / uploadedAt are optional — used when available (contractor docs)
+// but the component degrades gracefully without them (job attachments).
+function SignedFileLink({ filePath, defaultBucket, fileName, fileType, uploadedAt }) {
+  const [url, setUrl] = useState('#');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchUrl() {
+      setLoading(true);
+      const signedUrl = await getSignedFileUrl(filePath, defaultBucket);
+      if (isMounted) {
+        setUrl(signedUrl);
+        setLoading(false);
+      }
+    }
+
+    if (filePath) {
+      fetchUrl();
+    }
+    return () => { isMounted = false; };
+  }, [filePath, defaultBucket]);
+
+  const ext = getFileExt(fileName);
+  const extStyle = EXT_STYLES[ext] || EXT_STYLES.default;
+  const metaParts = [fileType, uploadedAt ? `Uploaded ${formatFileDate(uploadedAt)}` : null].filter(Boolean);
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`adm-doc-card ${loading ? 'is-disabled' : ''}`}
+    >
+      <div className="adm-doc-badge" style={{ background: extStyle.bg, color: extStyle.color }}>
+        {ext || 'FILE'}
+      </div>
+      <div className="adm-doc-info">
+        <div className="adm-doc-name">{fileName || 'Document'}</div>
+        <div className="adm-doc-meta">
+          {loading ? 'Loading…' : (metaParts.join(' · ') || 'Click to view')}
+        </div>
+      </div>
+    </a>
+  );
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [view, setView] = useState('jobs');
@@ -43,9 +213,9 @@ export default function AdminDashboard() {
 
   // Jobs search & filters
   const [jobSearch, setJobSearch] = useState('');
-  const [jobFilterStatus, setJobFilterStatus] = useState('all'); // 'all' | 'new' | 'in_progress' | 'completed'
+  const [jobFilterStatus, setJobFilterStatus] = useState('all');
   const [jobFilterService, setJobFilterService] = useState('all');
-  const [jobFilterDate, setJobFilterDate] = useState('all'); // 'all' | 'today' | 'week' | 'month'
+  const [jobFilterDate, setJobFilterDate] = useState('all');
   const [jobSortBy, setJobSortBy] = useState('newest');
 
   // Contractors state
@@ -60,17 +230,18 @@ export default function AdminDashboard() {
   const [filterProfession, setFilterProfession] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
 
-  // Autosave indicator: '' | 'saving' | 'saved'
+  // Autosave indicator
   const [saveIndicator, setSaveIndicator] = useState('');
 
-  // Refs to skip autosave on initial mount / job switch
   const isFirstNoteRender = useRef(true);
   const isFirstAssignRender = useRef(true);
   const selectedJobId = useRef(null);
 
-  useEffect(() => { fetchJobs(); fetchContractors(); }, []);
+  useEffect(() => { 
+    fetchJobs(); 
+    fetchContractors(); 
+  }, []);
 
-  // ── Reset skip-refs whenever the selected job changes ──
   useEffect(() => {
     if (selectedJob?.id !== selectedJobId.current) {
       selectedJobId.current = selectedJob?.id ?? null;
@@ -85,7 +256,7 @@ export default function AdminDashboard() {
     setTimeout(() => setSaveIndicator(''), 2200);
   };
 
-  // ── Autosave: admin notes ──
+  // Autosave notes
   useEffect(() => {
     if (!selectedJob) return;
 
@@ -106,9 +277,9 @@ export default function AdminDashboard() {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [jobNote]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [jobNote]);
 
-  // ── Autosave: contractor assignment ──
+  // Autosave contractor assignment
   useEffect(() => {
     if (!selectedJob) return;
 
@@ -118,55 +289,87 @@ export default function AdminDashboard() {
     }
 
     const timer = setTimeout(async () => {
-      const contractor = approvedContractors.find(c => c.user_id === assignContractorId);
+      const contractor = approvedContractors.find(c => (c.user_id || c.id) === assignContractorId);
+      const contractorName = contractor ? (contractor.full_name || contractor.name || '') : '';
+
       await supabase
         .from('contact_submissions')
         .update({
           assigned_contractor_id: assignContractorId || null,
-          assigned_contractor_name: contractor?.name || '',
+          assigned_contractor_name: contractorName,
         })
         .eq('id', selectedJob.id);
 
       setJobs(prev =>
         prev.map(j =>
           j.id === selectedJob.id
-            ? { ...j, assigned_contractor_id: assignContractorId, assigned_contractor_name: contractor?.name || '' }
+            ? { ...j, assigned_contractor_id: assignContractorId, assigned_contractor_name: contractorName }
             : j
         )
       );
       setSelectedJob(prev => ({
         ...prev,
         assigned_contractor_id: assignContractorId,
-        assigned_contractor_name: contractor?.name || '',
+        assigned_contractor_name: contractorName,
       }));
       flashSaved();
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [assignContractorId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [assignContractorId]);
 
   const fetchJobs = async () => {
     setJobsLoading(true);
-    const { data } = await supabase
+    // Fetch base jobs
+    const { data: jobData, error: jobErr } = await supabase
       .from('contact_submissions')
       .select('*')
       .order('created_at', { ascending: false });
-    setJobs(data || []);
+
+    if (jobErr) console.error('Fetch jobs error:', jobErr);
+
+    // Fetch files independently to avoid join crashes if RLS/foreign key is missing
+    const { data: filesData } = await supabase
+      .from('contact_submission_files')
+      .select('*');
+
+    const mappedJobs = (jobData || []).map(job => ({
+      ...job,
+      contact_submission_files: (filesData || []).filter(f => f.submission_id === job.id)
+    }));
+
+    setJobs(mappedJobs);
     setJobsLoading(false);
   };
 
   const fetchContractors = async () => {
     setContractorsLoading(true);
-    const { data } = await supabase
+    // Fetch base contractors table directly (matching original working code)
+    const { data: contractorData, error: contractorErr } = await supabase
       .from('professional_submissions')
       .select('*')
       .order('created_at', { ascending: false });
-    setContractors(data || []);
-    setApprovedContractors((data || []).filter(c => c.approved));
+
+    if (contractorErr) console.error('Fetch contractors error:', contractorErr);
+
+    // Fetch files independently to protect against missing DB foreign key constraints
+    const { data: filesData } = await supabase
+      .from('professional_submission_files')
+      .select('*');
+
+    const mappedContractors = (contractorData || []).map(c => {
+      const cId = c.user_id || c.id;
+      return {
+        ...c,
+        professional_submissions_files: (filesData || []).filter(f => f.user_id === cId || f.submission_id === cId)
+      };
+    });
+
+    setContractors(mappedContractors);
+    setApprovedContractors(mappedContractors.filter(c => c.approved));
     setContractorsLoading(false);
   };
 
-  // ── Derived: all unique services across jobs ──
   const allJobServices = useMemo(() => {
     const set = new Set();
     jobs.forEach(j => {
@@ -176,16 +379,13 @@ export default function AdminDashboard() {
     return Array.from(set).sort();
   }, [jobs]);
 
-  // ── Derived: filtered + sorted jobs ──
   const filteredJobs = useMemo(() => {
     let list = [...jobs];
 
-    // Status filter
     if (jobFilterStatus !== 'all') {
       list = list.filter(j => (j.status || 'new') === jobFilterStatus);
     }
 
-    // Service type filter
     if (jobFilterService !== 'all') {
       list = list.filter(j => {
         const svcs = Array.isArray(j.services) ? j.services : j.services ? [j.services] : [];
@@ -193,7 +393,6 @@ export default function AdminDashboard() {
       });
     }
 
-    // Date range filter
     if (jobFilterDate !== 'all') {
       const now = new Date();
       list = list.filter(j => {
@@ -214,7 +413,6 @@ export default function AdminDashboard() {
       });
     }
 
-    // Text search
     const q = jobSearch.trim().toLowerCase();
     if (q) {
       list = list.filter(j =>
@@ -227,7 +425,6 @@ export default function AdminDashboard() {
       );
     }
 
-    // Sort
     list.sort((a, b) => {
       if (jobSortBy === 'newest') return new Date(b.created_at) - new Date(a.created_at);
       if (jobSortBy === 'oldest') return new Date(a.created_at) - new Date(b.created_at);
@@ -251,7 +448,6 @@ export default function AdminDashboard() {
     jobSearch || jobFilterStatus !== 'all' || jobFilterService !== 'all' ||
     jobFilterDate !== 'all' || jobSortBy !== 'newest';
 
-  // ── Derived: all unique professions across contractors ──
   const allProfessions = useMemo(() => {
     const set = new Set();
     contractors.forEach(c => {
@@ -261,7 +457,6 @@ export default function AdminDashboard() {
     return Array.from(set).sort();
   }, [contractors]);
 
-  // ── Derived: filtered + sorted contractor list ──
   const filteredContractors = useMemo(() => {
     let list = [...contractors];
 
@@ -278,7 +473,7 @@ export default function AdminDashboard() {
     const q = contractorSearch.trim().toLowerCase();
     if (q) {
       list = list.filter(c =>
-        (c.name || '').toLowerCase().includes(q) ||
+        (c.full_name || c.name || '').toLowerCase().includes(q) ||
         (c.business || '').toLowerCase().includes(q) ||
         (c.email || '').toLowerCase().includes(q) ||
         (c.service_area || '').toLowerCase().includes(q)
@@ -286,10 +481,12 @@ export default function AdminDashboard() {
     }
 
     list.sort((a, b) => {
+      const nameA = a.full_name || a.name || '';
+      const nameB = b.full_name || b.name || '';
       if (sortBy === 'newest') return new Date(b.created_at) - new Date(a.created_at);
       if (sortBy === 'oldest') return new Date(a.created_at) - new Date(b.created_at);
-      if (sortBy === 'name_az') return (a.name || '').localeCompare(b.name || '');
-      if (sortBy === 'name_za') return (b.name || '').localeCompare(a.name || '');
+      if (sortBy === 'name_az') return nameA.localeCompare(nameB);
+      if (sortBy === 'name_za') return nameB.localeCompare(nameA);
       return 0;
     });
 
@@ -306,15 +503,15 @@ export default function AdminDashboard() {
   const hasActiveFilters =
     contractorSearch || filterStatus !== 'all' || filterProfession !== 'all' || sortBy !== 'newest';
 
-  // ── Contractor actions ──
   const approveContractor = async (id) => {
     const { error } = await supabase
       .from('professional_submissions')
       .update({ approved: true })
-      .eq('user_id', id);
+      .or(`user_id.eq.${id},id.eq.${id}`);
+
     if (error) { console.error('Approve failed:', error.message); return; }
     fetchContractors();
-    if (selectedContractor?.user_id === id)
+    if ((selectedContractor?.user_id || selectedContractor?.id) === id)
       setSelectedContractor(prev => ({ ...prev, approved: true }));
   };
 
@@ -322,14 +519,14 @@ export default function AdminDashboard() {
     const { error } = await supabase
       .from('professional_submissions')
       .update({ approved: false })
-      .eq('user_id', id);
+      .or(`user_id.eq.${id},id.eq.${id}`);
+
     if (error) { console.error('Revoke failed:', error.message); return; }
     fetchContractors();
-    if (selectedContractor?.user_id === id)
+    if ((selectedContractor?.user_id || selectedContractor?.id) === id)
       setSelectedContractor(prev => ({ ...prev, approved: false }));
   };
 
-  // ── Job actions ──
   const updateJobStatus = async (id, status) => {
     await supabase.from('contact_submissions').update({ status }).eq('id', id);
     setJobs(prev => prev.map(j => j.id === id ? { ...j, status } : j));
@@ -375,8 +572,9 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-root">
+      <FileCardStyles />
 
-      {/* ── Sidebar ── */}
+      {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="admin-brand">
           <div className="admin-brand-sm">SM</div>
@@ -390,7 +588,7 @@ export default function AdminDashboard() {
             <span className="sidebar-stat-label">Jobs</span>
           </div>
           <div className="sidebar-stat">
-            <span className="sidebar-stat-val">{contractorStats.approved}</span>
+            <span className="sidebar-stat-val">{contractorStats.total}</span>
             <span className="sidebar-stat-label">Contractors</span>
           </div>
         </div>
@@ -421,7 +619,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* ── Main ── */}
+      {/* Main Panel */}
       <main className="admin-main">
 
         {/* ════ JOBS VIEW ════ */}
@@ -445,7 +643,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* ── Jobs search + filter bar ── */}
+            {/* Jobs Toolbar */}
             <div className="contractor-toolbar">
               <div className="contractor-search-wrap">
                 <Icon d={Icons.search} size={15} />
@@ -464,7 +662,6 @@ export default function AdminDashboard() {
               </div>
 
               <div className="contractor-filters">
-                {/* Status filter pills */}
                 <div className="filter-pill-group">
                   {['all', 'new', 'in_progress', 'completed'].map(s => (
                     <button
@@ -481,7 +678,6 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
-                {/* Date range filter */}
                 <select
                   className="admin-select admin-select--sm"
                   value={jobFilterDate}
@@ -493,7 +689,6 @@ export default function AdminDashboard() {
                   <option value="month">Last 30 Days</option>
                 </select>
 
-                {/* Service type filter */}
                 {allJobServices.length > 0 && (
                   <select
                     className="admin-select admin-select--sm"
@@ -507,7 +702,6 @@ export default function AdminDashboard() {
                   </select>
                 )}
 
-                {/* Sort */}
                 <div className="sort-wrap">
                   <Icon d={Icons.sort} size={14} />
                   <select
@@ -529,14 +723,13 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Results count */}
             <div className="contractor-results-meta">
               {filteredJobs.length} of {jobs.length} job{jobs.length !== 1 ? 's' : ''}
               {hasActiveJobFilters && ' (filtered)'}
             </div>
 
             <div className="admin-split">
-              {/* Job list */}
+              {/* Job List */}
               <div className="admin-list">
                 {jobsLoading
                   ? <div className="admin-loading">Loading jobs…</div>
@@ -578,7 +771,7 @@ export default function AdminDashboard() {
                 }
               </div>
 
-              {/* Job detail */}
+              {/* Job Detail */}
               <div className="admin-detail">
                 {!selectedJob
                   ? <div className="admin-detail-empty">Select a job to view details</div>
@@ -663,6 +856,25 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
+                      {/* Job Files */}
+                      {selectedJob.contact_submission_files?.length > 0 && (
+                        <div className="detail-section">
+                          <div className="detail-section-label">
+                            Attached Files ({selectedJob.contact_submission_files.length})
+                          </div>
+                          <div className="adm-doc-list" style={{ marginTop: '8px' }}>
+                            {selectedJob.contact_submission_files.map(file => (
+                              <SignedFileLink
+                                key={file.id || file.file_path}
+                                filePath={file.file_path}
+                                defaultBucket="submissions-files"
+                                fileName={file.file_name}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="detail-section">
                         <div className="detail-section-label">
                           Assign Contractor
@@ -677,11 +889,15 @@ export default function AdminDashboard() {
                               onChange={e => setAssignContractorId(e.target.value)}
                             >
                               <option value="">— Unassigned —</option>
-                              {approvedContractors.map(c => (
-                                <option key={c.user_id} value={c.user_id}>
-                                  {c.name} · {c.business || c.email}
-                                </option>
-                              ))}
+                              {approvedContractors.map(c => {
+                                const cid = c.user_id || c.id;
+                                const cName = c.full_name || c.name || 'Contractor';
+                                return (
+                                  <option key={cid} value={cid}>
+                                    {cName} · {c.business || c.email}
+                                  </option>
+                                );
+                              })}
                             </select>
                           )
                         }
@@ -731,7 +947,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* ── Search & Filter Bar ── */}
+            {/* Contractor Toolbar */}
             <div className="contractor-toolbar">
               <div className="contractor-search-wrap">
                 <Icon d={Icons.search} size={15} />
@@ -796,14 +1012,13 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Results count */}
             <div className="contractor-results-meta">
               {filteredContractors.length} of {contractors.length} contractor{contractors.length !== 1 ? 's' : ''}
               {hasActiveFilters && ' (filtered)'}
             </div>
 
             <div className="admin-split">
-              {/* Contractor list */}
+              {/* Contractor List */}
               <div className="admin-list">
                 {contractorsLoading
                   ? <div className="admin-loading">Loading contractors…</div>
@@ -816,44 +1031,50 @@ export default function AdminDashboard() {
                         )}
                       </div>
                     )
-                    : filteredContractors.map(c => (
-                      <div
-                        key={c.user_id}
-                        className={`admin-list-item ${selectedContractor?.user_id === c.user_id ? 'selected' : ''}`}
-                        onClick={() => openContractor(c)}
-                      >
-                        <div className="list-item-top">
-                          <span className="list-item-name">{c.name}</span>
-                          <span
-                            className="list-item-status"
-                            style={{ color: c.approved ? '#3a9c6b' : '#c8953a' }}
-                          >
-                            {c.approved ? 'Approved' : 'Pending'}
-                          </span>
-                        </div>
-                        <div className="list-item-meta">
-                          <span>{c.business || c.email}</span>
-                          <span>{formatDate(c.created_at)}</span>
-                        </div>
-                        {c.professions?.length > 0 && (
-                          <div className="list-item-tags">
-                            {(Array.isArray(c.professions) ? c.professions : [c.professions])
-                              .slice(0, 2)
-                              .map(p => <span key={p} className="list-tag">{p}</span>)
-                            }
-                            {(Array.isArray(c.professions) ? c.professions : [c.professions]).length > 2 && (
-                              <span className="list-tag list-tag--more">
-                                +{(Array.isArray(c.professions) ? c.professions : [c.professions]).length - 2}
-                              </span>
-                            )}
+                    : filteredContractors.map(c => {
+                      const cid = c.user_id || c.id;
+                      const cName = c.full_name || c.name || 'Contractor Application';
+                      const isSelected = (selectedContractor?.user_id || selectedContractor?.id) === cid;
+
+                      return (
+                        <div
+                          key={cid}
+                          className={`admin-list-item ${isSelected ? 'selected' : ''}`}
+                          onClick={() => openContractor(c)}
+                        >
+                          <div className="list-item-top">
+                            <span className="list-item-name">{cName}</span>
+                            <span
+                              className="list-item-status"
+                              style={{ color: c.approved ? '#3a9c6b' : '#c8953a' }}
+                            >
+                              {c.approved ? 'Approved' : 'Pending'}
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    ))
+                          <div className="list-item-meta">
+                            <span>{c.business || c.email}</span>
+                            <span>{formatDate(c.created_at)}</span>
+                          </div>
+                          {c.professions?.length > 0 && (
+                            <div className="list-item-tags">
+                              {(Array.isArray(c.professions) ? c.professions : [c.professions])
+                                .slice(0, 2)
+                                .map(p => <span key={p} className="list-tag">{p}</span>)
+                              }
+                              {(Array.isArray(c.professions) ? c.professions : [c.professions]).length > 2 && (
+                                <span className="list-tag list-tag--more">
+                                  +{(Array.isArray(c.professions) ? c.professions : [c.professions]).length - 2}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
                 }
               </div>
 
-              {/* Contractor detail */}
+              {/* Contractor Detail */}
               <div className="admin-detail">
                 {!selectedContractor
                   ? <div className="admin-detail-empty">Select a contractor to view details</div>
@@ -861,7 +1082,9 @@ export default function AdminDashboard() {
                     <div className="detail-content">
                       <div className="detail-header">
                         <div>
-                          <h2 className="detail-title">{selectedContractor.name}</h2>
+                          <h2 className="detail-title">
+                            {selectedContractor.full_name || selectedContractor.name || 'Contractor Details'}
+                          </h2>
                           <p className="detail-sub">
                             {selectedContractor.business || '—'} · {selectedContractor.email}
                           </p>
@@ -887,7 +1110,7 @@ export default function AdminDashboard() {
                             ? (
                               <button
                                 className="btn-approve"
-                                onClick={() => approveContractor(selectedContractor.user_id)}
+                                onClick={() => approveContractor(selectedContractor.user_id || selectedContractor.id)}
                               >
                                 Approve Contractor
                               </button>
@@ -895,7 +1118,7 @@ export default function AdminDashboard() {
                             : (
                               <button
                                 className="btn-revoke"
-                                onClick={() => revokeContractor(selectedContractor.user_id)}
+                                onClick={() => revokeContractor(selectedContractor.user_id || selectedContractor.id)}
                               >
                                 Revoke Approval
                               </button>
@@ -912,7 +1135,7 @@ export default function AdminDashboard() {
                           <span className="dg-label">Service Area</span>
                           <span>{selectedContractor.service_area || '—'}</span>
                           <span className="dg-label">Specialty</span>
-                          <span>{selectedContractor.years_exp || '—'}</span>
+                          <span>{selectedContractor.years_exp || selectedContractor.specialty || '—'}</span>
                           <span className="dg-label">Website</span>
                           <span>{selectedContractor.website || '—'}</span>
                           <span className="dg-label">Applied</span>
@@ -944,12 +1167,33 @@ export default function AdminDashboard() {
                         </div>
                       )}
 
+                      {/* Contractor Documents */}
+                      {selectedContractor.professional_submissions_files?.length > 0 && (
+                        <div className="detail-section">
+                          <div className="detail-section-label">
+                            Uploaded Documents &amp; Licenses ({selectedContractor.professional_submissions_files.length})
+                          </div>
+                          <div className="adm-doc-list" style={{ marginTop: '8px' }}>
+                            {selectedContractor.professional_submissions_files.map(file => (
+                              <SignedFileLink
+                                key={file.id || file.file_path}
+                                filePath={file.file_path}
+                                defaultBucket="submissions-files"
+                                fileName={file.file_name || 'Document'}
+                                fileType={file.file_type}
+                                uploadedAt={file.created_at}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="detail-section">
                         <div className="detail-section-label">Assigned Jobs</div>
-                        {jobs.filter(j => j.assigned_contractor_id === selectedContractor.user_id).length === 0
+                        {jobs.filter(j => j.assigned_contractor_id === (selectedContractor.user_id || selectedContractor.id)).length === 0
                           ? <p className="detail-hint">No jobs assigned yet.</p>
                           : jobs
-                            .filter(j => j.assigned_contractor_id === selectedContractor.user_id)
+                            .filter(j => j.assigned_contractor_id === (selectedContractor.user_id || selectedContractor.id))
                             .map(j => (
                               <div
                                 key={j.id}

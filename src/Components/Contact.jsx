@@ -13,6 +13,7 @@ import {
   formatRetryTime,
 } from '../lib/formSecurity';
 
+const MAX_FILES = 5;
 const SERVICES_NEEDED = [
   'Hardwood Flooring',
   'Tile / Stone Flooring',
@@ -22,16 +23,35 @@ const SERVICES_NEEDED = [
   'Other',
 ];
 
+// Whitelist of allowed values to prevent tampering via DevTools
+const ALLOWED_SERVICES = new Set(SERVICES_NEEDED);
+const ALLOWED_BUDGETS = new Set([
+  'Under $2,000',
+  '$2,000 – $5,000',
+  '$5,000 – $10,000',
+  '$10,000 – $25,000',
+  '$25,000+',
+]);
+const ALLOWED_TIMELINES = new Set([
+  'ASAP',
+  'Within 1 month',
+  '1–3 months',
+  '3–6 months',
+  'Flexible / Planning stage',
+]);
+
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TIMES = ['Morning', 'Afternoon'];
-
 const CONTACT_DETAILS = [
   { title: 'Phone', body: '(703) 580-1222' },
   { title: 'Service Area', body: 'Proudly Serving Northern Virginia, Maryland, and Greater Washington DC Area' },
   { title: 'Business Hours', body: <>Monday – Saturday: 10:00 AM – 6:00 PM<br />Sunday: Closed</> },
 ];
 
-// ── Phone formatter (UI only — sanitizePhone runs on submit) ──
+const EMAIL_RE = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+const NAME_RE  = /^[a-zA-Z\u00C0-\u024F'\- ]{2,80}$/;
+const PHONE_RE = /^\(\d{3}\)\s\d{3}-\d{4}$/;
+
 function formatPhone(val) {
   const digits = val.replace(/\D/g, '').slice(0, 10);
   if (digits.length < 4) return digits;
@@ -41,22 +61,17 @@ function formatPhone(val) {
 
 export default function Contact() {
   const uid = useId();
-  const fid = (name) => `${uid}-${name}`; // stable unique IDs for ADA
-
+  const fid = (name) => `${uid}-${name}`;
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
-
   const [selectedServices, setSelectedServices] = useState([]);
   const [availability, setAvailability] = useState([]);
-  const [floorplanFile, setFloorplanFile] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [phone, setPhone] = useState('');
-
-  const floorplanRef = useRef(null);
+  const fileInputRef = useRef(null);
   const errorRef = useRef(null);
-
-  // ── Helpers ──────────────────────────────────────────────────
 
   function showErr(msg) {
     setErrorMsg(msg);
@@ -67,60 +82,79 @@ export default function Contact() {
   }
 
   const toggleService = (v) => {
-    if (!SERVICES_NEEDED.includes(v)) return; // whitelist guard
+    if (!SERVICES_NEEDED.includes(v)) return;
     setSelectedServices(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v]);
   };
 
   const toggleSlot = (day, time) => {
-    if (!DAYS.includes(day) || !TIMES.includes(time)) return; // whitelist guard
+    if (!DAYS.includes(day) || !TIMES.includes(time)) return;
     const slot = `${day} ${time}`;
     setAvailability(prev => prev.includes(slot) ? prev.filter(x => x !== slot) : [...prev, slot]);
   };
 
   const isActive = (day, time) => availability.includes(`${day} ${time}`);
 
-  // ── File handler — MIME + magic-byte verified ─────────────────
-  async function handleFileChange(file) {
-    if (!file) { setFloorplanFile(null); return; }
+  // ── Multi-file validation handler ──────────────────────────────
+  async function handleFilesAdded(fileList) {
+    if (!fileList || fileList.length === 0) return;
 
-    const mimeCheck = validateFile(file, 'floorplan');
-    if (!mimeCheck.valid) {
-      showErr(mimeCheck.message);
+    const incoming = Array.from(fileList);
+    if (uploadedFiles.length + incoming.length > MAX_FILES) {
+      showErr(`You can upload a maximum of ${MAX_FILES} files.`);
       return;
     }
 
-    const magicOk = await verifyFileMagic(file);
-    if (!magicOk) {
-      showErr(
-        `${file.name} does not appear to be a valid file. ` +
-        `Please upload a genuine PNG, PDF, or JPG.`
-      );
-      return;
+    const validFiles = [];
+    for (const file of incoming) {
+      const mimeCheck = validateFile(file, 'resume'); // uses general document whitelist
+      if (!mimeCheck.valid) {
+        showErr(mimeCheck.message);
+        return;
+      }
+      const magicOk = await verifyFileMagic(file);
+      if (!magicOk) {
+        showErr(`${file.name} does not appear to be a valid file. Please upload genuine documents or images.`);
+        return;
+      }
+      validFiles.push(file);
     }
 
-    setFloorplanFile(file);
+    setUploadedFiles(prev => [...prev, ...validFiles]);
     setShowError(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  // ── Upload helper ─────────────────────────────────────────────
-  async function uploadFile(submissionId, file, fileType) {
-    if (!file) return;
-    const safeName = sanitizeFileName(file.name);
-    const ext = safeName.split('.').pop().replace(/[^a-z0-9]/gi, '').slice(0, 10);
-    const path = `contact/${submissionId}/${fileType}-${Date.now()}.${ext}`;
+  function removeFile(indexToRemove) {
+    setUploadedFiles(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  }
 
-    const { error: uploadError } = await supabase.storage
-      .from('submissions-files')
-      .upload(path, file);
+  // ── Concurrent upload helper ──────────────────────────────────
+  async function uploadFiles(submissionId, files) {
+    if (!files || files.length === 0) return;
 
-    if (uploadError) { console.error('File upload error:', uploadError); return; }
+    const uploadPromises = files.map(async (file) => {
+      const safeName = sanitizeFileName(file.name);
+      const ext = safeName.split('.').pop().replace(/[^a-z0-9]/gi, '').slice(0, 10);
+      const path = `contact/${submissionId}/attachment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`;
 
-    await supabase.from('contact_submission_files').insert([{
-      submission_id: submissionId,
-      file_name: safeName,
-      file_path: path,
-      file_type: fileType,
-    }]);
+      const { error: uploadError } = await supabase.storage
+        .from('submissions-files')
+        .upload(path, file);
+
+      if (uploadError) {
+        console.error(`Upload error for ${safeName}:`, uploadError);
+        return;
+      }
+
+      await supabase.from('contact_submission_files').insert([{
+        submission_id: submissionId,
+        file_name: safeName,
+        file_path: path,
+        file_type: 'attachment',
+      }]);
+    });
+
+    await Promise.all(uploadPromises);
   }
 
   // ── Submit ────────────────────────────────────────────────────
@@ -129,7 +163,7 @@ export default function Contact() {
     setShowError(false);
     setShowSuccess(false);
 
-    // Rate limit
+    // 1. Rate Limit Check
     const rate = checkRateLimit();
     if (!rate.allowed) {
       showErr(`Too many attempts. Please wait ${formatRetryTime(rate.retryAfterMs)} before trying again.`);
@@ -139,32 +173,50 @@ export default function Contact() {
     setLoading(true);
     const form = e.target;
 
-    // Sanitize all fields
+    // 2. Sanitization Layer
     const name = sanitizeText(form.name.value, { maxLength: 80 });
     const email = sanitizeEmail(form.email.value);
     const cleanPhone = sanitizePhone(phone);
-    const budget = sanitizeText(form.budget.value, { maxLength: 60 });
-    const timeline = sanitizeText(form.timeline.value, { maxLength: 60 });
+    const rawBudget = form.budget.value;
+    const rawTimeline = form.timeline.value;
     const projectDesc = sanitizeNotes(form.project_desc.value, { maxLength: 2000 });
 
-    // Basic required field check
-    if (!name) { showErr('Please enter your name.'); return; }
-    if (!email) { showErr('Please enter a valid email address.'); return; }
-    if (!projectDesc) { showErr('Please describe your project.'); return; }
-    console.log('inserting:', {
-      name,
-      email,
-      phone: cleanPhone || null,
-      budget: budget || null,
-      timeline: timeline || null,
-      services: selectedServices,
-      availability,
-      project_desc: projectDesc,
-    });
+    // 3. Regex & Pattern Validation
+    if (!NAME_RE.test(name)) {
+      showErr('Name may only contain letters, spaces, hyphens, and apostrophes (2–80 characters).');
+      return;
+    }
+    if (!EMAIL_RE.test(email)) {
+      showErr('Please enter a valid email address.');
+      return;
+    }
+    if (cleanPhone && !PHONE_RE.test(cleanPhone)) {
+      showErr('Phone must be in (555) 000-0000 format.');
+      return;
+    }
+
+    // 4. Dropdown Whitelist Validation (prevents injection via DevTools inspection changes)
+    const budget = ALLOWED_BUDGETS.has(rawBudget) ? rawBudget : null;
+    const timeline = ALLOWED_TIMELINES.has(rawTimeline) ? rawTimeline : null;
+
+    if (!selectedServices || selectedServices.length === 0) {
+      showErr('Please select at least one service needed.');
+      return;
+    }
+    for (const svc of selectedServices) {
+      if (!ALLOWED_SERVICES.has(svc)) {
+        showErr('Invalid service selection detected.');
+        return;
+      }
+    }
+
+    if (!projectDesc) {
+      showErr('Please describe your project.');
+      return;
+    }
+
+    // 5. Database Insertion
     const submissionId = crypto.randomUUID();
-
-
-
     const { error } = await supabase
       .from('contact_submissions')
       .insert([{
@@ -172,8 +224,8 @@ export default function Contact() {
         name,
         email,
         phone: cleanPhone || null,
-        budget: budget || null,
-        timeline: timeline || null,
+        budget,
+        timeline,
         services: selectedServices,
         availability,
         project_desc: projectDesc,
@@ -185,16 +237,16 @@ export default function Contact() {
       return;
     }
 
-    await uploadFile(submissionId, floorplanFile, 'floorplan');
+    await uploadFiles(submissionId, uploadedFiles);
 
     setLoading(false);
     setShowSuccess(true);
     setSelectedServices([]);
     setAvailability([]);
-    setFloorplanFile(null);
+    setUploadedFiles([]);
     setPhone('');
     form.reset();
-    setTimeout(() => setShowSuccess(false), 5000);
+    setTimeout(() => setShowSuccess(false), 50000);
   };
 
   return (
@@ -203,7 +255,6 @@ export default function Contact() {
         <div className="form-card">
           <div className="form-title">Request a Quote</div>
 
-          {/* Error banner */}
           {showError && (
             <div
               ref={errorRef}
@@ -213,17 +264,15 @@ export default function Contact() {
               tabIndex={-1}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               {errorMsg}
             </div>
           )}
 
           <form onSubmit={handleSubmit} noValidate aria-label="Quote request form">
-
             <fieldset className="form-fieldset">
               <legend className="form-legend">Your Details</legend>
-
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor={fid('name')}>
@@ -241,7 +290,6 @@ export default function Contact() {
                     aria-required="true"
                   />
                 </div>
-
                 <div className="form-group">
                   <label htmlFor={fid('email')}>
                     Email Address <span aria-hidden="true">*</span>
@@ -259,7 +307,6 @@ export default function Contact() {
                   />
                 </div>
               </div>
-
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor={fid('phone')}>Phone Number</label>
@@ -282,7 +329,6 @@ export default function Contact() {
 
             <fieldset className="form-fieldset">
               <legend className="form-legend">Project Details</legend>
-
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor={fid('budget')}>Estimated Budget</label>
@@ -295,7 +341,6 @@ export default function Contact() {
                     <option>$25,000+</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label htmlFor={fid('timeline')}>Desired Timeline</label>
                   <select id={fid('timeline')} name="timeline">
@@ -386,33 +431,47 @@ export default function Contact() {
 
             <fieldset className="form-fieldset">
               <legend className="form-legend">
-                Floor Plan <span className="form-legend-hint">(optional)</span>
+                Project Files & Floor Plans <span className="form-legend-hint">(optional, up to 5)</span>
               </legend>
               <div className="upload-field">
-                <div
+                <button
+                  type="button"
                   className="upload-zone"
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Upload floor plan"
-                  aria-describedby={fid('floorplan-hint')}
-                  onClick={() => floorplanRef.current.click()}
-                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && floorplanRef.current.click()}
+                  aria-label="Upload files"
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <input
-                    ref={floorplanRef}
+                    ref={fileInputRef}
+                    id={fid('file-input')}
                     type="file"
-                    accept=".png,.pdf,.jpeg,.jpg"
+                    multiple
+                    accept=".png,.pdf,.jpeg,.jpg,.doc,.docx"
+                    aria-label="Upload project files or floor plans"
                     style={{ display: 'none' }}
-                    aria-hidden="true"
                     tabIndex={-1}
-                    onChange={e => handleFileChange(e.target.files[0] || null)}
+                    onChange={e => handleFilesAdded(e.target.files)}
                   />
-                  {floorplanFile
-                    ? <div className="upload-filename">{floorplanFile.name}</div>
-                    : <div className="upload-hint">Click or press Enter to upload</div>
-                  }
-                  <div id={fid('floorplan-hint')} className="upload-meta">PNG, PDF, JPEG · max 10 MB</div>
-                </div>
+                  <div className="upload-hint">Click or press Enter to add files ({uploadedFiles.length}/{MAX_FILES})</div>
+                  <div id={fid('file-hint')} className="upload-meta">PNG, PDF, JPEG, DOCX · Max 10 MB per file</div>
+                </button>
+
+                {uploadedFiles.length > 0 && (
+                  <div className="uploaded-file-list" style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {uploadedFiles.map((file, idx) => (
+                      <div key={`${file.name}-${idx}`} className="file-pill">
+                        <span className="file-pill-name">{file.name}</span>
+                        <button
+                          type="button"
+                          className="file-remove-btn"
+                          onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </fieldset>
 
@@ -426,7 +485,6 @@ export default function Contact() {
             </button>
           </form>
 
-          {/* Success banner */}
           <div
             className={`success-banner ${showSuccess ? 'show' : ''}`}
             role="status"
@@ -447,7 +505,7 @@ export default function Contact() {
         <div className="contact-detail">
           {CONTACT_DETAILS.map(c => (
             <div key={c.title} className="contact-item">
-              <h4>{c.title}</h4>
+              <h3>{c.title}</h3>
               <p>{c.body}</p>
             </div>
           ))}

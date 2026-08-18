@@ -33,7 +33,7 @@
 
 .contact-icon {
   font-size: 1.2rem;
-  color: var(--tan);
+  color: var(--tan-dark);
   flex-shrink: 0;
   padding-top: 2px;
 }

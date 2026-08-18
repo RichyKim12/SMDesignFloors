@@ -1,7 +1,7 @@
 import './Hero.css';
-import imgStorefront from '../assets/Hero/image4.jpg';
+import imgStorefront from '../assets/flooring/9.jpg';
 import imgShowroom from '../assets/Hero/image5.JPG';
-import imgWork from '../assets/Hero/image1.JPG';
+import imgWork from '../assets/bathroom/12.jpg';
 
 export default function Hero() {
   return (
@@ -13,7 +13,7 @@ export default function Hero() {
         </h1>
         <p className="hero-sub">
           We craft enduring spaces through expert flooring installation, bathroom
-          transformations, and kitchen remodeling—each project a testament to quality craftsmanship.
+          transformations, and kitchen remodeling - each project a testament to quality craftsmanship.
         </p>
         <div className="btn-row">
           <a href="#contact" className="btn-primary" style={{ padding: '22px 80px' }}>
@@ -24,15 +24,15 @@ export default function Hero() {
 
       <div className="hero-visual">
         <div className="img-box">
-          <img src={imgWork} alt="Our work" />
+          <img src={imgWork} alt="Our work of a bathroom remodeling" />
           <div className="img-label">Our Work</div>
         </div>
         <div className="img-box">
-          <img src={imgStorefront} alt="SM Floors storefront" />
+          <img src={imgStorefront} alt="Our work of a hardwood flooring stair installation" />
           
         </div>
         <div className="img-box">
-          <img src={imgShowroom} alt="Our showroom" />
+          <img src={imgShowroom} alt="Our work of a hardwood flooring and stair installation" />
           
         </div>
         

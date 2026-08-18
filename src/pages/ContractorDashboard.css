@@ -73,7 +73,8 @@
 
 .cd-avatar-email {
     font-size: 11px;
-    opacity: 0.6;
+    color: var(--cream);
+    /* opacity: 0.6; */
 }
 
 .cd-status-badge {
@@ -111,7 +112,7 @@
     border-radius: 10px;
 
     background: transparent;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--cream);
 
     cursor: pointer;
 }
@@ -144,7 +145,7 @@
     border-radius: 10px;
 
     background: transparent;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--cream);
 
     cursor: pointer;
 }

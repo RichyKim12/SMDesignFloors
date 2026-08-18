@@ -5,10 +5,50 @@
   border-top: 1px solid rgba(0,0,0,0.06);
   border-bottom: 1px solid rgba(0,0,0,0.06);
 }
+.brand-carousel-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
 .brand-carousel-label {
   text-align: center; font-size: 0.7rem; letter-spacing: 0.22em;
-  text-transform: uppercase; color: var(--tan); margin-bottom: 32px;
+  text-transform: uppercase; color: var(--mid);
 }
+.carousel-pause-btn {
+  background: none;
+  border: 1px solid var(--mid);
+  color: var(--mid);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.carousel-pause-btn:hover {
+  background: var(--mid);
+  color: var(--cream);
+}
+.carousel-pause-btn:focus-visible {
+  outline: 2px solid var(--dark);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .brand-track-wrapper { position: relative; overflow: hidden; }
 .brand-track {
   display: flex; gap: 60px; align-items: center;
@@ -41,8 +81,34 @@ footer {
   font-size: 1.4rem; color: var(--cream); font-weight: 300;
 }
 .footer-logo span { font-style: italic; }
-footer p { color: rgba(255,255,255,0.32); font-size: 0.76rem; letter-spacing: 0.06em; }
-
+footer p {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+}
 @media (max-width: 900px) {
   footer { flex-direction: column; gap: 16px; text-align: center; }
+}
+
+.footer-legal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-privacy-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--text-muted, #a89a85);
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.footer-privacy-btn:hover {
+  color: var(--accent-color, #c8953a);
 }

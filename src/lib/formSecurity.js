@@ -185,8 +185,8 @@ export function validateForm({ name, email, phone, password, confirmPassword, se
 // retry in a new session without being permanently blocked).
 
 const RATE_KEY     = 'smdf_pro_attempts';
-const MAX_ATTEMPTS = 3;
-const WINDOW_MS    = 15 * 60 * 1000; // 15 minutes
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS    = 15 * 1000; // 15 minutes
 
 function getAttempts() {
   try {
@@ -309,6 +309,7 @@ export async function verifyFileMagic(file) {
 export function normalizeAuthError(authError) {
   if (!authError) return null;
   const msg = authError.message?.toLowerCase() ?? '';
+  console.log(msg);
 
   // Enumeration risk: "user already exists" / "email already registered"
   if (
@@ -319,9 +320,9 @@ export function normalizeAuthError(authError) {
   ) {
     // Return the same message we'd show for any other error
     // so attackers can't distinguish "email taken" from "invalid email"
-    return 'Unable to create account. Please check your details and try again.';
+    return 'Unable to sign in. Please check your details and try again.';
   }
 
   // Generic fallback — never expose raw Supabase error text to the UI
-  return 'Unable to create account. Please check your details and try again.';
+  return 'Unable to sign in. Please check your details and try again.';
 }

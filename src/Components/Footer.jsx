@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import './Footer.css';
 
 import easternFlooring from '../assets/Brands/Eastern-Flooring-Products-1.png';
@@ -14,19 +14,19 @@ import arizona from '../assets/Brands/Screenshot_26-3-2026_193040_tse1.mm.bing.n
 import daltile from '../assets/Brands/Screenshot_26-3-2026_193114_tse1.mm.bing.net.jpeg';
 import shaw from '../assets/Brands/Screenshot_26-3-2026_193135_tse3.mm.bing.net.jpeg';
 
-const BRAND_LOGOS = [
-  easternFlooring,
-  emsertile,
-  floridatile,
-  mullican,
-  wickaham,
-  chesapeake,
-  bruce,
-  armstrong,
-  mirage,
-  arizona,
-  daltile,
-  shaw,
+const BRANDS = [
+  { src: easternFlooring, name: 'Eastern Flooring Products' },
+  { src: emsertile,       name: 'Emser Tile' },
+  { src: floridatile,     name: 'Florida Tile' },
+  { src: mullican,        name: 'Mullican Flooring' },
+  { src: wickaham,        name: 'Wickham' },
+  { src: chesapeake,      name: 'Chesapeake Flooring' },
+  { src: bruce,           name: 'Bruce Flooring' },
+  { src: armstrong,       name: 'Armstrong Flooring' },
+  { src: mirage,          name: 'Mirage Floors' },
+  { src: arizona,         name: 'Arizona Tile' },
+  { src: daltile,         name: 'Daltile' },
+  { src: shaw,            name: 'Shaw Floors' },
 ];
 
 function BrandCarousel() {
@@ -36,6 +36,7 @@ function BrandCarousel() {
   const animOffset  = useRef(0);
   const currentX    = useRef(0);
   const resumeTimer = useRef(null);
+  const [isPaused, setIsPaused] = useState(false);
 
   const getTrackX = () =>
     new DOMMatrixReadOnly(window.getComputedStyle(trackRef.current).transform).m41;
@@ -54,7 +55,7 @@ function BrandCarousel() {
     if (!isDragging.current) return;
     let newX = animOffset.current + (clientX - startX.current);
     const half = trackRef.current.scrollWidth / 2;
-    if (newX > 0)     newX -= half;
+    if (newX > 0)    newX -= half;
     if (newX < -half) newX += half;
     trackRef.current.style.transform = `translateX(${newX}px)`;
     currentX.current = newX;
@@ -64,6 +65,7 @@ function BrandCarousel() {
     if (!isDragging.current) return;
     isDragging.current = false;
     trackRef.current.classList.remove('dragging');
+    if (isPaused) return;
     resumeTimer.current = setTimeout(() => {
       const half = trackRef.current.scrollWidth / 2;
       const pct  = Math.abs(currentX.current) / half;
@@ -71,8 +73,20 @@ function BrandCarousel() {
     }, 3000);
   };
 
+  const togglePause = () => {
+    setIsPaused(prev => {
+      const next = !prev;
+      if (trackRef.current) {
+        trackRef.current.style.animationPlayState = next ? 'paused' : 'running';
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
     const track = trackRef.current;
+    if (!track) return;
+
     const onMouseDown  = (e) => { startDrag(e.clientX); e.preventDefault(); };
     const onMouseMove  = (e) => moveDrag(e.clientX);
     const onTouchStart = (e) => startDrag(e.touches[0].clientX);
@@ -90,23 +104,40 @@ function BrandCarousel() {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', stopDrag);
       track.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove', onTouchMove);
+      track.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', stopDrag);
     };
-  }, []);
+  }, [isPaused]);
 
-  const allLogos = [...BRAND_LOGOS, ...BRAND_LOGOS];
+  const allBrands = [...BRANDS, ...BRANDS];
 
   return (
     <div className="brand-carousel">
-      <div className="brand-carousel-label">Our Trusted Brands</div>
-      <div className="brand-track-wrapper">
+      <div className="brand-carousel-header">
+        <div className="brand-carousel-label" id="brand-carousel-heading">
+          Our Trusted Brands
+        </div>
+        <button
+          type="button"
+          className="carousel-pause-btn"
+          onClick={togglePause}
+          aria-pressed={isPaused}
+        >
+          {isPaused ? '▶ Play' : '⏸ Pause'}
+          <span className="sr-only"> brand logo scrolling</span>
+        </button>
+      </div>
+      <div
+        className="brand-track-wrapper"
+        role="region"
+        aria-labelledby="brand-carousel-heading"
+      >
         <div className="brand-track" ref={trackRef}>
-          {allLogos.map((src, i) => (
+          {allBrands.map((brand, i) => (
             <div key={i} className="brand-box">
               <img
-                src={src}
-                alt={`Brand ${i + 1}`}
+                src={brand.src}
+                alt={brand.name}
                 style={{ maxWidth: '110px', maxHeight: '50px', objectFit: 'contain' }}
               />
             </div>
@@ -117,13 +148,22 @@ function BrandCarousel() {
   );
 }
 
-export default function Footer() {
+export default function Footer({ onOpenPrivacy }) {
   return (
     <>
       <BrandCarousel />
       <footer>
         <div className="footer-logo">SM <span>Design</span> Floors</div>
-        <p>© 2026 SM Design Floors. All rights reserved.</p>
+        <div className="footer-legal">
+          <p>© 2026 SM Design Floors. All rights reserved.</p>
+          <button
+            type="button"
+            className="footer-privacy-btn"
+            onClick={onOpenPrivacy}
+          >
+            Privacy Policy
+          </button>
+        </div>
       </footer>
     </>
   );

@@ -33,11 +33,55 @@ const Icons = {
     'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 6v6l4 2',
 };
 
+const EXT_STYLES = {
+  PDF: { bg: 'rgba(200, 74, 74, 0.12)', color: '#a82424' },
+  DOC: { bg: 'rgba(58, 127, 200, 0.12)', color: '#1a599c' },
+  DOCX: { bg: 'rgba(58, 127, 200, 0.12)', color: '#1a599c' },
+  PNG: { bg: 'rgba(58, 156, 107, 0.12)', color: '#1e6b43' },
+  JPG: { bg: 'rgba(58, 156, 107, 0.12)', color: '#1e6b43' },
+  JPEG: { bg: 'rgba(58, 156, 107, 0.12)', color: '#1e6b43' },
+  default: { bg: 'rgba(120, 83, 52, 0.12)', color: '#785334' },
+};
+
+function getFileExt(fileName = '') {
+  const parts = fileName.split('.');
+  return parts.length > 1 ? parts.pop().toUpperCase() : '';
+}
+
+function formatDocDate(dateStr) {
+  if (!dateStr) return '';
+  try {
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return '';
+  }
+}
+
 const STATUS_CONFIG = {
-  pending: { label: 'Under Review', color: '#c8953a', bg: 'rgba(200,149,58,0.12)' },
-  approved: { label: 'Approved', color: '#3a9c6b', bg: 'rgba(58,156,107,0.12)' },
-  rejected: { label: 'Not Approved', color: '#c84a4a', bg: 'rgba(200,74,74,0.12)' },
-  active: { label: 'Active', color: '#3a7fc8', bg: 'rgba(58,127,200,0.12)' },
+  pending: { 
+    label: 'Under Review', 
+    color: 'black', 
+    bg: 'rgb(197, 194, 22)' 
+  },
+  approved: { 
+    label: 'Approved', 
+    color: '#1e6b43', 
+    bg: 'rgba(58, 156, 107, 0.15)' 
+  },
+  rejected: { 
+    label: 'Not Approved', 
+    color: '#a82424', 
+    bg: 'rgba(200, 74, 74, 0.15)' 
+  },
+  active: { 
+    label: 'Active', 
+    color: '#1a599c', 
+    bg: 'rgba(58, 127, 200, 0.15)' 
+  },
 };
 
 export default function ContractorDashboard() {
@@ -47,6 +91,7 @@ export default function ContractorDashboard() {
   const [submission, setSubmission] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [openingDocId, setOpeningDocId] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
 
@@ -62,6 +107,7 @@ export default function ContractorDashboard() {
   }, []);
 
   const loadData = async (uid) => {
+    if (!uid) return;
     setLoading(true);
 
     const [profileRes, submissionRes] = await Promise.all([
@@ -69,9 +115,9 @@ export default function ContractorDashboard() {
       supabase.from('professional_submissions').select('*').eq('user_id', uid).maybeSingle(),
     ]);
 
-    const submission = submissionRes.data;
+    const subData = submissionRes.data;
 
-    if (!submission) {
+    if (!subData) {
       setSubmission(null);
       setDocuments([]);
       setJobs([]);
@@ -80,17 +126,14 @@ export default function ContractorDashboard() {
     }
 
     if (profileRes.data) setProfile(profileRes.data);
-    // console.log('submissionRes', submissionRes)
-    if (submissionRes.data) {
-      setSubmission(submissionRes.data);
+    setSubmission(subData);
+    console.log(uid);
+    const docsRes = await supabase
+      .from('professional_submission_files')
+      .select('*')
+      .eq('submission_id', uid);
 
-      const docsRes = await supabase
-        .from('professional_submission_files')
-        .select('*')
-        .eq('submission_id', submissionRes.data.user_id);
-
-      if (docsRes.data) setDocuments(docsRes.data);
-    }
+    if (docsRes.data) setDocuments(docsRes.data);
 
     const jobsRes = await supabase
       .from('contractor_jobs')
@@ -103,15 +146,29 @@ export default function ContractorDashboard() {
     setLoading(false);
   };
 
+  const handleViewDocument = async (doc) => {
+    if (!doc?.file_path) return;
+    setOpeningDocId(doc.id);
+    try {
+      // Bucket is private (RLS-protected), so we need a short-lived
+      // signed URL rather than a public URL.
+      const { data, error } = await supabase.storage
+        .from('submissions-files')
+        .createSignedUrl(doc.file_path, 60); // valid for 60 seconds
+
+      if (error) throw error;
+
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('Error opening document:', err);
+      alert('Could not open this file. Please try again.');
+    } finally {
+      setOpeningDocId(null);
+    }
+  };
+
   const handleSignOut = async () => {
-    console.log('before signout');
-
-    const { error } = await supabase.auth.signOut();
-    console.log('signout error:', error);
-
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log('session after signout:', session);
-
+    await supabase.auth.signOut();
     navigate('/');
   };
 
@@ -131,8 +188,11 @@ export default function ContractorDashboard() {
     );
   }
 
-  const status = submission?.status || 'pending';
-  const statusConf = STATUS_CONFIG[status];
+  // professional_submissions only has a boolean `approved` column — there's
+  // no `status` text field, so derive it here instead of reading one off
+  // the row.
+  const status = submission?.approved ? 'approved' : 'pending';
+  const statusConf = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Icons.status },
@@ -143,12 +203,8 @@ export default function ContractorDashboard() {
 
   return (
     <div className="cd-root">
-
       <aside className="cd-sidebar">
-
-        {/* TOP SECTION (STRUCTURED FIX) */}
         <div className="cd-sidebar-top-section">
-
           <div className="cd-sidebar-top">
             <div className="cd-logo-mark">SM</div>
             <div className="cd-logo-text">ProServices</div>
@@ -179,8 +235,6 @@ export default function ContractorDashboard() {
           </div>
         </div>
 
-
-
         <div className="cd-sidebar-footer">
           {tabs.map((t) => (
             <button
@@ -197,11 +251,9 @@ export default function ContractorDashboard() {
             <span>Sign Out</span>
           </button>
         </div>
-
       </aside>
 
       <main className="cd-main">
-
         {activeTab === 'overview' && (
           <div className="cd-section">
             <h1 className="cd-page-title">
@@ -219,7 +271,9 @@ export default function ContractorDashboard() {
                   Application {statusConf.label}
                 </div>
                 <div className="cd-status-card-desc">
-                  We are reviewing your application.
+                  {status === 'approved'
+                    ? 'Your application has been approved.'
+                    : 'We are reviewing your application.'}
                 </div>
               </div>
             </div>
@@ -259,6 +313,46 @@ export default function ContractorDashboard() {
                 </div>
               </div>
             </div>
+
+            <div className="cd-danger-zone" style={{ marginTop: '2rem', border: '1px solid #a82424', padding: '1.5rem', borderRadius: '8px' }}>
+              <h3 style={{ color: '#a82424', marginBottom: '0.5rem', fontSize: '1.1rem' }}>Danger Zone</h3>
+              <p style={{ fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '1.25rem', color: '#444' }}>
+                Once you delete your account, all associated submissions, documents, and job records will be permanently removed. This action cannot be undone.
+              </p>
+              <button 
+                type="button" 
+                className="cd-delete-btn" 
+                style={{ 
+                  backgroundColor: '#a82424', 
+                  color: 'white', 
+                  padding: '0.7rem 1.25rem', 
+                  border: 'none', 
+                  borderRadius: '6px', 
+                  fontWeight: '600',
+                  cursor: 'pointer' 
+                }}
+                onClick={async () => {
+                  const confirmed = window.confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.');
+                  if (!confirmed) return;
+
+                  try {
+                    setLoading(true);
+                    
+                    const { error: rpcError } = await supabase.rpc('delete_user_account');
+                    if (rpcError) throw rpcError;
+
+                    await supabase.auth.signOut();
+                    navigate('/');
+                  } catch (err) {
+                    console.error('Error deleting account:', err);
+                    alert('Failed to delete account. Please try again or contact support.');
+                    setLoading(false);
+                  }
+                }}
+              >
+                Delete Account
+              </button>
+            </div>
           </div>
         )}
 
@@ -285,22 +379,116 @@ export default function ContractorDashboard() {
 
         {activeTab === 'docs' && (
           <div className="cd-section">
+            <style>{`
+              .cd-doc-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+              }
+              .cd-doc-card {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                width: 100%;
+                padding: 14px 16px;
+                border-radius: 12px;
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                background: #fff;
+                text-align: left;
+                font: inherit;
+                cursor: pointer;
+                transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+              }
+              .cd-doc-card:hover:not(:disabled) {
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+                transform: translateY(-1px);
+                border-color: rgba(0, 0, 0, 0.15);
+              }
+              .cd-doc-card:disabled {
+                opacity: 0.6;
+                cursor: default;
+              }
+              .cd-doc-badge {
+                flex-shrink: 0;
+                width: 42px;
+                height: 42px;
+                border-radius: 9px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1rem;
+                font-weight: 700;
+                letter-spacing: 0.02em;
+              }
+              .cd-doc-info {
+                flex: 1;
+                min-width: 0;
+              }
+              .cd-doc-name {
+                font-weight: 600;
+                font-size: 1rem;
+                color: #1a1a1a;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+              .cd-doc-meta {
+                font-size: 0.8rem;
+                color: #767676;
+                margin-top: 2px;
+              }
+              .cd-doc-chevron {
+                flex-shrink: 0;
+                color: #b3b3b3;
+              }
+            `}</style>
+
             <h1 className="cd-page-title">Documents</h1>
 
             {documents.length === 0 ? (
               <p className="cd-page-subtitle">No documents uploaded.</p>
             ) : (
-              documents.map((doc) => (
-                <div key={doc.id} className="cd-status-card">
-                  <div className="cd-status-card-label">
-                    {doc.file_name || 'Document'}
-                  </div>
-                </div>
-              ))
+              <div className="cd-doc-list">
+                {documents.map((doc) => {
+                  const ext = getFileExt(doc.file_name);
+                  const extStyle = EXT_STYLES[ext] || EXT_STYLES.default;
+                  const isOpening = openingDocId === doc.id;
+                  return (
+                    <button
+                      key={doc.id}
+                      type="button"
+                      className="cd-doc-card"
+                      onClick={() => handleViewDocument(doc)}
+                      disabled={isOpening}
+                    >
+                      <div
+                        className="cd-doc-badge"
+                        style={{ background: extStyle.bg, color: extStyle.color }}
+                      >
+                        {ext || 'FILE'}
+                      </div>
+
+                      <div className="cd-doc-info">
+                        <div className="cd-doc-name">{doc.file_name || 'Document'}</div>
+                        <div className="cd-doc-meta">
+                          {isOpening
+                            ? 'Opening…'
+                            : doc.created_at
+                            ? `Uploaded ${formatDocDate(doc.created_at)}`
+                            : 'Click to view'}
+                        </div>
+                      </div>
+
+                      <div className="cd-doc-chevron">
+                        <Icon d="M9 6l6 6-6 6" size={18} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
-
       </main>
     </div>
   );
