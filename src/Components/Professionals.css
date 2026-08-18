@@ -298,6 +298,26 @@
   font-weight: 500;
 }
 
+.form-submit {
+  margin-top: 10px;
+  padding: 12px;
+  background: #8b5e3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: 600;
+}
+.form-submit:focus-visible {
+  outline: 2px solid #3a3020;
+  outline-offset: 2px;
+}
+.form-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .form-legal {
   font-size: 0.75rem;
   color: #3d352e;

@@ -805,7 +805,7 @@ export default function Professionals({ onOpenPrivacy }) {
             <button
               ref={submitButtonRef}
               type="submit"
-              className="form-submit btn-primary"
+              className="form-submit"
               disabled={loading}
             >
               {loading ? 'Submitting...' : 'Register'}
